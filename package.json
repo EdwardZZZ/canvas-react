@@ -1,0 +1,46 @@
+{
+  "name": "@z/canvas-react",
+  "version": "0.1.0",
+  "description": "A lightweight, high-performance Canvas rendering engine built with TypeScript and React.",
+  "keywords": [
+    "react",
+    "canvas",
+    "rendering-engine",
+    "typescript",
+    "graphics",
+    "scene-graph"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@eslint/js": "^9.17.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^25.2.0",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "jsdom": "^22.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0",
+    "vitest": "^4.0.18"
+  }
+}
