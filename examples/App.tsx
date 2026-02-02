@@ -302,12 +302,30 @@ const AssetAndFilterDemo = () => {
 };
 
 function App() {
+  const [debug, setDebug] = useState(false);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
       <h1>React Canvas Engine (TS)</h1>
-      <p>Declarative rendering with React components.</p>
+      <p>
+        Declarative rendering with React components. 
+        <button 
+          onClick={() => setDebug(!debug)}
+          style={{ 
+            marginLeft: '10px', 
+            padding: '5px 10px', 
+            background: debug ? '#0096fd' : '#eee', 
+            color: debug ? '#fff' : '#333',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          {debug ? 'Disable DevTools' : 'Enable DevTools'}
+        </button>
+      </p>
       
-      <Canvas width={800} height={700} style={{ border: '1px solid #ddd', borderRadius: '8px' }}>
+      <Canvas width={800} height={700} debug={debug} style={{ border: '1px solid #ddd', borderRadius: '8px' }}>
         {/* Background */}
         <Rect width={800} height={700} fill="#f9f9f9" />
         

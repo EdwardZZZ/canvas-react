@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, HTMLAttributes, FC, MouseEvent as ReactMou
 import { Container } from '../core/Container';
 import { SceneContext, RenderContext, RenderLoop } from './CanvasContext';
 import { InteractionEvent, Node } from '../core/Node';
+import { DevTools } from './DevTools';
 
 /**
  * Default implementation of the render loop.
@@ -30,13 +31,14 @@ class DefaultRenderLoop implements RenderLoop {
 export interface CanvasProps extends HTMLAttributes<HTMLCanvasElement> {
   width?: number;
   height?: number;
+  debug?: boolean; // Enable DevTools
 }
 
 /**
  * The root component of the React Canvas Engine.
  * Sets up the rendering context, scene graph root, and event listeners.
  */
-const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, children, ...rest }) => {
+const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, children, ...rest }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Persistent stage instance across re-renders
   const [stage] = useState(() => new Container());
@@ -313,19 +315,22 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, children, ...rest 
   return (
     <RenderContext.Provider value={renderLoop}>
       <SceneContext.Provider value={stage}>
-        <canvas 
-          ref={canvasRef} 
-          onClick={handleClick}
-          onMouseDown={handlePointerDown}
-          onMouseUp={handlePointerUp}
-          onMouseMove={handlePointerMove}
-          onMouseLeave={handleMouseLeave}
-          onTouchStart={handlePointerDown}
-          onTouchMove={handlePointerMove}
-          onTouchEnd={handlePointerUp}
-          onTouchCancel={handlePointerUp}
-          {...rest} 
-        />
+        <div style={{ position: 'relative', width, height }}>
+            <canvas 
+              ref={canvasRef} 
+              onClick={handleClick}
+              onMouseDown={handlePointerDown}
+              onMouseUp={handlePointerUp}
+              onMouseMove={handlePointerMove}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={handlePointerDown}
+              onTouchMove={handlePointerMove}
+              onTouchEnd={handlePointerUp}
+              onTouchCancel={handlePointerUp}
+              {...rest} 
+            />
+            {debug && <DevTools />}
+        </div>
         {children}
       </SceneContext.Provider>
     </RenderContext.Provider>
