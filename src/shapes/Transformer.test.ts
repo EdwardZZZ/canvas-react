@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Transformer } from './Transformer';
 import { Node } from '../core/Node';
-import { Matrix2D } from '../core/Matrix';
 
 describe('Transformer', () => {
     let target: Node;
@@ -20,7 +19,7 @@ describe('Transformer', () => {
         
         const hit = transformer.hitTest({ x: 200, y: 200 });
         expect(hit).toBe(transformer);
-        // @ts-ignore - accessing private state for test
+        // @ts-expect-error - testing private prop - accessing private state for test
         expect(transformer.activeAnchor).toBe('bottom-right');
     });
 
@@ -30,7 +29,7 @@ describe('Transformer', () => {
         
         const hit = transformer.hitTest({ x: 150, y: 70 });
         expect(hit).toBe(transformer);
-        // @ts-ignore
+        // @ts-expect-error - testing private prop
         expect(transformer.activeAnchor).toBe('rotator');
     });
 

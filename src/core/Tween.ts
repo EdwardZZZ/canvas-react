@@ -31,7 +31,7 @@ export class Tween {
     this.startProps = {};
     this.deltaProps = {};
 
-    const { node, duration, easing, onUpdate, onFinish, ...propsToAnimate } = this.config;
+    const { node, ...propsToAnimate } = this.config;
 
     for (const key in propsToAnimate) {
       if (typeof node.props[key] === 'number' || typeof (node as any)[key] === 'number') {
@@ -47,7 +47,7 @@ export class Tween {
     const tick = (time: number) => {
       if (!this.isRunning) return;
 
-      let elapsed = (time - this.startTime) / 1000;
+      const elapsed = (time - this.startTime) / 1000;
       let progress = elapsed / this.config.duration!;
 
       if (progress >= 1) {

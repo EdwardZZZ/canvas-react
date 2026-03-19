@@ -24,8 +24,8 @@ type Constructor<T> = new (props: any) => T;
  * 3. Removes it from the parent container on unmount.
  * 4. Updates properties when props change.
  */
-const createShapeComponent = <T extends Node>(EngineClass: Constructor<T>) => {
-  return React.forwardRef<T, any>((props, ref) => {
+const createShapeComponent = <T extends Node>(EngineClass: Constructor<T>, name: string) => {
+  const Component = React.forwardRef<T, any>((props, ref) => {
     const parent = useCanvasParent();
     const nodeRef = useRef<T | null>(null);
 
@@ -36,6 +36,14 @@ const createShapeComponent = <T extends Node>(EngineClass: Constructor<T>) => {
 
     // Expose ref to parent
     React.useImperativeHandle(ref, () => nodeRef.current as T);
+
+    // Provide values to React DevTools
+    React.useDebugValue(nodeRef.current ? {
+        x: nodeRef.current.props.x,
+        y: nodeRef.current.props.y,
+        className: name,
+        ...nodeRef.current.props
+    } : 'Initializing...');
 
     // Handle lifecycle: add/remove from parent
     useEffect(() => {
@@ -56,21 +64,24 @@ const createShapeComponent = <T extends Node>(EngineClass: Constructor<T>) => {
 
     return null;
   });
+
+  Component.displayName = name;
+  return Component;
 };
 
-export const Rect = createShapeComponent<EngineRect>(EngineRect);
-export const Circle = createShapeComponent<EngineCircle>(EngineCircle);
-export const Ellipse = createShapeComponent<EngineEllipse>(EngineEllipse);
-export const RegularPolygon = createShapeComponent<EngineRegularPolygon>(EngineRegularPolygon);
-export const Star = createShapeComponent<EngineStar>(EngineStar);
-export const Arc = createShapeComponent<EngineArc>(EngineArc);
-export const Text = createShapeComponent<EngineText>(EngineText);
-export const Image = createShapeComponent<EngineImage>(EngineImage);
-export const Line = createShapeComponent<EngineLine>(EngineLine);
-export const Path = createShapeComponent<EnginePath>(EnginePath);
-export const Transformer = createShapeComponent<EngineTransformer>(EngineTransformer);
+export const Rect = createShapeComponent<EngineRect>(EngineRect, 'Rect');
+export const Circle = createShapeComponent<EngineCircle>(EngineCircle, 'Circle');
+export const Ellipse = createShapeComponent<EngineEllipse>(EngineEllipse, 'Ellipse');
+export const RegularPolygon = createShapeComponent<EngineRegularPolygon>(EngineRegularPolygon, 'RegularPolygon');
+export const Star = createShapeComponent<EngineStar>(EngineStar, 'Star');
+export const Arc = createShapeComponent<EngineArc>(EngineArc, 'Arc');
+export const Text = createShapeComponent<EngineText>(EngineText, 'Text');
+export const Image = createShapeComponent<EngineImage>(EngineImage, 'Image');
+export const Line = createShapeComponent<EngineLine>(EngineLine, 'Line');
+export const Path = createShapeComponent<EnginePath>(EnginePath, 'Path');
+export const Transformer = createShapeComponent<EngineTransformer>(EngineTransformer, 'Transformer');
 
-export interface GroupProps extends NodeProps, PropsWithChildren<{}> {
+export interface GroupProps extends NodeProps, PropsWithChildren {
   clip?: boolean;
   clipX?: number;
   clipY?: number;
@@ -93,6 +104,13 @@ export const Group = React.forwardRef<Container, GroupProps>(({ children, ...pro
 
   React.useImperativeHandle(ref, () => nodeRef.current as Container);
 
+  React.useDebugValue(nodeRef.current ? {
+    x: nodeRef.current.props.x,
+    y: nodeRef.current.props.y,
+    childrenCount: nodeRef.current.children.length,
+    ...nodeRef.current.props
+  } : 'Initializing...');
+
   useEffect(() => {
     const node = nodeRef.current;
     if (!node) return;
@@ -113,3 +131,5 @@ export const Group = React.forwardRef<Container, GroupProps>(({ children, ...pro
     </SceneContext.Provider>
   );
 });
+
+Group.displayName = 'Group';

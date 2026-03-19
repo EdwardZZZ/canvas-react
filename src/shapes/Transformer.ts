@@ -1,6 +1,6 @@
 import { Container, ContainerProps } from '../core/Container';
 import { Node, InteractionEvent, Rect } from '../core/Node';
-import { Matrix2D, Point } from '../core/Matrix';
+import { Point } from '../core/Matrix';
 
 export interface TransformerProps extends ContainerProps {
     target?: Node;
@@ -20,15 +20,8 @@ export class Transformer extends Container {
     
     // Drag state
     private activeAnchor: string | null = null;
-    private startX: number = 0;
-    private startY: number = 0;
-    private startWidth: number = 0;
-    private startHeight: number = 0;
-    private startScaleX: number = 1;
-    private startScaleY: number = 1;
-    private startRotation: number = 0;
-    private startXPos: number = 0;
-    private startYPos: number = 0;
+    private startPointer: Point = { x: 0, y: 0 };
+    private startTargetBounds: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
     constructor(props: TransformerProps = {}) {
         super(props);
@@ -76,7 +69,7 @@ export class Transformer extends Container {
     // However, if the target is rotated, we want the box to rotate too.
     // So we should copy the target's Global Transform.
 
-    render(ctx: CanvasRenderingContext2D, viewport?: Rect) {
+    render(ctx: CanvasRenderingContext2D) {
         if (!this.target) return;
 
         ctx.save();
@@ -104,12 +97,6 @@ export class Transformer extends Container {
         // Let's try: calculate where the target is, and draw there.
         // Since ctx has our parent's transform, we need:
         // TargetGlobal * Inverse(OurParentGlobal) -> This gives us the matrix to transform from Target Local to Our Local.
-        
-        let matrix = targetTransform;
-        if (this.parent) {
-             const parentGlobal = this.parent.getGlobalTransform();
-             matrix = parentGlobal.invert().multiply(targetTransform);
-        }
         
         // We override the transform set by Node.render() (which was just this.getTransform())
         // Actually Node.render() called ctx.transform() then this.draw().
@@ -338,20 +325,8 @@ export class Transformer extends Container {
         
         e.stopPropagation();
         
-        this.startX = e.globalX;
-        this.startY = e.globalY;
-        
-        // Snapshot target state
-        this.startWidth = this.target.props.width || 0; // Only works for Rect/Image?
-        // For generic nodes, we modify scale.
-        this.startScaleX = this.target.scaleX;
-        this.startScaleY = this.target.scaleY;
-        this.startRotation = this.target.rotation;
-        this.startXPos = this.target.x;
-        this.startYPos = this.target.y;
-        
-        // If target doesn't have width/height props (like Container), we rely on selfBounds?
-        // Changing scale is safer.
+        this.startPointer = { x: e.globalX, y: e.globalY };
+        this.startTargetBounds = this.target.getSelfBounds();
     }
     
     handleDragMove(e: InteractionEvent) {
@@ -359,67 +334,64 @@ export class Transformer extends Container {
         
         e.stopPropagation();
         
-        // This is a simplified implementation of scaling.
-        // A robust implementation needs to handle rotation and center points.
+        // This is a very simplified transform logic.
+        // A full implementation requires handling rotation, pivot, and parent transforms.
         
-        const dx = e.globalX - this.startX;
-        const dy = e.globalY - this.startY;
+        const deltaX = e.globalX - this.startPointer.x;
+        const deltaY = e.globalY - this.startPointer.y;
         
-        // For now, let's just implement simple scaling for bottom-right handle
-        // assuming no rotation on target.
-        // To do it properly with rotation, we need to project delta onto the target's local axes.
-        
-        if (this.activeAnchor === 'bottom-right') {
-            // We need to convert global delta to local delta?
-            // No, we need to see how much we "stretched" the object.
-            
-            // Simplified:
-            // Calculate distance from center? Or from opposite anchor?
-            // Let's assume scaling from Top-Left (anchor point of Node).
-            
-            // New scale = Old Scale * (New Size / Old Size)
-            
-            // This is complex math to get right in one go.
-            // Let's implement a basic version: adjusting scaleX/scaleY based on drag.
-            
-            // Project global delta onto target's local axes
-            const globalTransform = this.target.getGlobalTransform();
-            // Remove translation to get rotation/scale matrix
-            // Actually, we can just transform the delta vector by the inverse rotation.
-            
-            const rotation = this.target.getGlobalTransform().decompose().rotation;
-            const cos = Math.cos(-rotation);
-            const sin = Math.sin(-rotation);
-            
-            const localDx = dx * cos - dy * sin;
-            const localDy = dx * sin + dy * cos;
-            
-            // Assume we are scaling based on the selfBounds size
-            const bounds = this.target.getSelfBounds();
-            if (bounds.width > 0) {
-                const newWidth = bounds.width * this.startScaleX + localDx;
-                this.target.scaleX = Math.max(0.1, newWidth / bounds.width);
-            }
-            if (bounds.height > 0) {
-                const newHeight = bounds.height * this.startScaleY + localDy;
-                this.target.scaleY = Math.max(0.1, newHeight / bounds.height);
-            }
+        if (this.activeAnchor === 'rotator') {
+             // Calculate angle
+             const centerGlobal = this.target.getGlobalTransform().transformPoint({
+                 x: this.startTargetBounds.width / 2,
+                 y: this.startTargetBounds.height / 2
+             });
+             
+             const angle = Math.atan2(e.globalY - centerGlobal.y, e.globalX - centerGlobal.x);
+             // Offset by 90 degrees because rotator is at the top
+             this.target.rotation = angle + Math.PI / 2;
+        } else {
+             // Handle scaling
+             // For simplicity, just update scaleX/scaleY based on delta and initial bounds
+             
+             const parentGlobal = this.target.parent ? this.target.parent.getGlobalTransform() : this.target.getGlobalTransform().identity();
+             
+             // Inverse transform delta into local space
+             const invParent = parentGlobal.invert();
+             const localDeltaX = deltaX * invParent.a + deltaY * invParent.c;
+             const localDeltaY = deltaX * invParent.b + deltaY * invParent.d;
+             
+             // Very naive scaling (assumes target scale was 1, needs robust math for real engine)
+             let newScaleX = this.target.scaleX;
+             let newScaleY = this.target.scaleY;
+             
+             if (this.activeAnchor.includes('right')) {
+                 newScaleX += localDeltaX / (this.startTargetBounds.width || 1);
+             } else if (this.activeAnchor.includes('left')) {
+                 newScaleX -= localDeltaX / (this.startTargetBounds.width || 1);
+             }
+             
+             if (this.activeAnchor.includes('bottom')) {
+                 newScaleY += localDeltaY / (this.startTargetBounds.height || 1);
+             } else if (this.activeAnchor.includes('top')) {
+                 newScaleY -= localDeltaY / (this.startTargetBounds.height || 1);
+             }
+             
+             if (this.props.keepRatio) {
+                 const maxScale = Math.max(Math.abs(newScaleX), Math.abs(newScaleY));
+                 newScaleX = newScaleX < 0 ? -maxScale : maxScale;
+                 newScaleY = newScaleY < 0 ? -maxScale : maxScale;
+             }
+             
+             this.target.scaleX = newScaleX;
+             this.target.scaleY = newScaleY;
         }
-        else if (this.activeAnchor === 'rotator') {
-            // Calculate angle between center and mouse
-            const bounds = this.target.getGlobalBounds();
-            const cx = bounds.x + bounds.width / 2;
-            const cy = bounds.y + bounds.height / 2;
-            
-            const angle = Math.atan2(e.globalY - cy, e.globalX - cx);
-            // Snap to -90 deg (top) being 0 rotation?
-            // The handle is at -90 deg relative to center.
-            // So rotation = angle + 90deg
-            this.target.rotation = angle + Math.PI / 2;
-        }
+        
+        this.startPointer = { x: e.globalX, y: e.globalY };
+        this.requestRedraw();
     }
     
-    handleDragEnd(e: InteractionEvent) {
+    handleDragEnd(_e: InteractionEvent) {
         this.activeAnchor = null;
     }
 }

@@ -39,7 +39,7 @@ describe('React Shapes Components', () => {
     
     // Fix: Text.ts uses a static property measureContext.
     // We can manually set it to our mock context!
-    // @ts-ignore
+    // @ts-expect-error - overriding readonly static property for test
     Text.measureContext = mockContext;
     
     // Also add measureText to mockContext (it was missing in the spy object above?)

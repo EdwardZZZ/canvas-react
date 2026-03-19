@@ -92,6 +92,20 @@ The engine supports mouse and drag events on all shapes. You can also enable glo
 </Canvas>
 ```
 
+### Debugging & DevTools
+
+To make debugging complex canvas scenes easier, the engine provides multi-layered debugging support. Simply enable `debug={true}` on the `<Canvas>`:
+
+1. **React DevTools Integration**: When debugging is enabled, you can inspect the live coordinates and properties of all shape nodes (e.g., `Rect`, `Circle`) directly within the Chrome React DevTools "Components" panel.
+2. **Global Variable Exposure**: The engine exposes the root scene graph instance to `window.__CANVAS_STAGE__`. You can print and manipulate it directly in the Chrome Console (e.g., `__CANVAS_STAGE__.children`).
+3. **Built-in Visual Panel**: An in-app developer tools panel will be rendered in the bottom right corner, displaying the current FPS, node tree, and bounding box highlighters.
+
+```tsx
+<Canvas width={800} height={600} debug={true}>
+  {/* ... */}
+</Canvas>
+```
+
 ### Grouping, Clipping & Z-Index
 
 Use `<Group>` to organize shapes. You can also use `clip` to restrict rendering to the group's bounding box, and `zIndex` to control rendering order.

@@ -216,9 +216,9 @@ describe('Shapes Core', () => {
       // Wait for next tick/microtask
       await new Promise(resolve => setTimeout(resolve, 0));
       
-      // @ts-ignore - accessing private property for test
+      // @ts-expect-error - accessing private property for test
       expect(img.imageObj).toBeDefined();
-      // @ts-ignore
+      // @ts-expect-error - testing private prop
       expect(img.imageObj.src).toContain('test.png');
     });
 

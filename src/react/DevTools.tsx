@@ -166,7 +166,7 @@ export const DevTools: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                 width: bounds.width,
                 height: bounds.height
             });
-        } catch (e) {
+        } catch (_e) {
             setHighlightRect(null);
         }
     } else {
@@ -197,7 +197,7 @@ export const DevTools: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
           )}
         </div>
         
-        <div style={styles.treeContainer}>
+        <div style={styles.treeContainer} onClick={() => { setSelectedNode(null); }}>
           <TreeNode 
             node={stage} 
             depth={0} 

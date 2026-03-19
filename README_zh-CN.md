@@ -92,6 +92,20 @@ const App = () => (
 </Canvas>
 ```
 
+### 调试与 DevTools
+
+为了方便调试复杂的 Canvas 场景，引擎内置了多层次的调试支持。只需在 `<Canvas>` 上开启 `debug={true}` 即可启用：
+
+1. **React DevTools 集成**: 开启调试后，你可以直接在 Chrome 的 React DevTools "Components" 面板中查看所有图形节点（如 `Rect`, `Circle`）的实时坐标和属性。
+2. **全局变量暴露**: 开启调试后，引擎会将根场景图实例暴露在 `window.__CANVAS_STAGE__`，你可以在 Chrome 控制台 (Console) 中直接打印和操作它（例如 `__CANVAS_STAGE__.children`）。
+3. **内置可视化面板**: 页面右下角会渲染一个内置的开发者工具面板，展示当前的 FPS、节点树以及边界框高亮功能。
+
+```tsx
+<Canvas width={800} height={600} debug={true}>
+  {/* ... */}
+</Canvas>
+```
+
 ### 分组、裁剪与层级 (Z-Index)
 
 使用 `<Group>` 来组织图形。你还可以使用 `clip` 属性将渲染限制在分组的边界框内，或使用 `zIndex` 控制渲染顺序。

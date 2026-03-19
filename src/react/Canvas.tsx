@@ -82,6 +82,18 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
   }, [stage]);
 
   useEffect(() => {
+    if (debug) {
+      (window as any).__CANVAS_STAGE__ = stage;
+      console.log('Canvas Stage exposed to window.__CANVAS_STAGE__');
+    } else {
+      delete (window as any).__CANVAS_STAGE__;
+    }
+    return () => {
+      delete (window as any).__CANVAS_STAGE__;
+    };
+  }, [stage, debug]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 

@@ -1,6 +1,4 @@
-import { render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import Canvas from './Canvas';
 import { Rect as EngineRect } from '../shapes/Rect';
 import { Container } from '../core/Container';
 
