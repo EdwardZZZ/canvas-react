@@ -3,6 +3,10 @@ import { useCanvasParent, SceneContext } from './CanvasContext';
 import { Container } from '../core/Container';
 import { Rect as EngineRect, RectProps } from '../shapes/Rect';
 import { Circle as EngineCircle, CircleProps } from '../shapes/Circle';
+import { Ellipse as EngineEllipse, EllipseProps } from '../shapes/Ellipse';
+import { RegularPolygon as EngineRegularPolygon, RegularPolygonProps } from '../shapes/RegularPolygon';
+import { Star as EngineStar, StarProps } from '../shapes/Star';
+import { Arc as EngineArc, ArcProps } from '../shapes/Arc';
 import { Text as EngineText, TextProps } from '../shapes/Text';
 import { Image as EngineImage, ImageProps } from '../shapes/Image';
 import { Line as EngineLine, LineProps } from '../shapes/Line';
@@ -53,6 +57,10 @@ const createShapeComponent = <T extends Node, P extends NodeProps>(EngineClass: 
 
 export const Rect = createShapeComponent<EngineRect, RectProps>(EngineRect);
 export const Circle = createShapeComponent<EngineCircle, CircleProps>(EngineCircle);
+export const Ellipse = createShapeComponent<EngineEllipse, EllipseProps>(EngineEllipse);
+export const RegularPolygon = createShapeComponent<EngineRegularPolygon, RegularPolygonProps>(EngineRegularPolygon);
+export const Star = createShapeComponent<EngineStar, StarProps>(EngineStar);
+export const Arc = createShapeComponent<EngineArc, ArcProps>(EngineArc);
 export const Text = createShapeComponent<EngineText, TextProps>(EngineText);
 export const Image = createShapeComponent<EngineImage, ImageProps>(EngineImage);
 export const Line = createShapeComponent<EngineLine, LineProps>(EngineLine);

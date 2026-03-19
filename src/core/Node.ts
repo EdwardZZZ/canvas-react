@@ -1,4 +1,5 @@
 import { Matrix2D, Point } from './Matrix';
+import { Tween, TweenConfig } from './Tween';
 
 /**
  * Represents an interaction event (click, mouseover, etc.).
@@ -21,8 +22,13 @@ export interface InteractionEvent {
  */
 export interface CanvasEvents {
   onClick?: (e: InteractionEvent) => void;
+  onDoubleClick?: (e: InteractionEvent) => void;
+  onMouseDown?: (e: InteractionEvent) => void;
+  onMouseUp?: (e: InteractionEvent) => void;
+  onMouseMove?: (e: InteractionEvent) => void;
   onMouseEnter?: (e: InteractionEvent) => void;
   onMouseLeave?: (e: InteractionEvent) => void;
+  onWheel?: (e: InteractionEvent) => void;
   onDragStart?: (e: InteractionEvent) => void;
   onDragMove?: (e: InteractionEvent) => void;
   onDragEnd?: (e: InteractionEvent) => void;
@@ -41,6 +47,19 @@ export interface NodeProps extends CanvasEvents {
   draggable?: boolean;
   cursor?: string; // CSS cursor style (e.g. 'pointer', 'grab')
   
+  // Opacity & Composition
+  opacity?: number;
+  globalCompositeOperation?: GlobalCompositeOperation;
+
+  // Stroke and Fill
+  fill?: string | CanvasGradient | CanvasPattern;
+  stroke?: string | CanvasGradient | CanvasPattern;
+  lineWidth?: number;
+  lineDash?: number[];
+  lineDashOffset?: number;
+  lineCap?: CanvasLineCap;
+  lineJoin?: CanvasLineJoin;
+
   // Filters and Effects
   filter?: string; // CSS filter string (e.g. 'blur(5px)')
   shadowColor?: string;
@@ -70,6 +89,9 @@ export class Node {
   private _scaleY: number;
   private _zIndex: number;
   private _cursor: string;
+  
+  protected _cacheCanvas: HTMLCanvasElement | null = null;
+  protected _cacheCtx: CanvasRenderingContext2D | null = null;
   
   draggable: boolean;
   parent: Node | null;
@@ -182,8 +204,13 @@ export class Node {
 
   private updateEvents(props: NodeProps) {
     this.events.onClick = props.onClick;
+    this.events.onDoubleClick = props.onDoubleClick;
+    this.events.onMouseDown = props.onMouseDown;
+    this.events.onMouseUp = props.onMouseUp;
+    this.events.onMouseMove = props.onMouseMove;
     this.events.onMouseEnter = props.onMouseEnter;
     this.events.onMouseLeave = props.onMouseLeave;
+    this.events.onWheel = props.onWheel;
     this.events.onDragStart = props.onDragStart;
     this.events.onDragMove = props.onDragMove;
     this.events.onDragEnd = props.onDragEnd;
@@ -195,6 +222,69 @@ export class Node {
    */
   update(_deltaTime: number) {
     // Hook for animation updates
+  }
+
+  /**
+   * Caches the node as an image to improve rendering performance.
+   */
+  cache(options?: { pixelRatio?: number, padding?: number }) {
+    const pixelRatio = options?.pixelRatio || window.devicePixelRatio || 1;
+    const padding = options?.padding || 0;
+    
+    const bounds = this.getSelfBounds();
+    if (bounds.width === 0 || bounds.height === 0) return;
+
+    if (!this._cacheCanvas) {
+        this._cacheCanvas = document.createElement('canvas');
+        this._cacheCtx = this._cacheCanvas.getContext('2d');
+    }
+
+    const canvas = this._cacheCanvas;
+    const ctx = this._cacheCtx!;
+
+    canvas.width = (bounds.width + padding * 2) * pixelRatio;
+    canvas.height = (bounds.height + padding * 2) * pixelRatio;
+
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.translate(-bounds.x + padding, -bounds.y + padding);
+
+    // Render self and children into the cache canvas
+    // We need to bypass the cache when drawing into it
+    const originalCache = this._cacheCanvas;
+    this._cacheCanvas = null; // Temporarily disable to prevent infinite recursion
+    
+    // Draw directly
+    // Note: since this is local space, we don't apply node's own transform here,
+    // just the shape drawing and children drawing.
+    this.draw(ctx);
+    
+    // If it's a container, it would need to draw children here
+    // But Node doesn't know about children. We might need a separate mechanism or just call render?
+    // If we call render(), it applies transform again. So we just draw.
+    // For Containers, they should override cache to draw children.
+    
+    if ((this as any).children) {
+        (this as any).children.forEach((child: Node) => child.render(ctx));
+    }
+
+    this._cacheCanvas = originalCache;
+  }
+
+  /**
+   * Clears the cache.
+   */
+  clearCache() {
+    this._cacheCanvas = null;
+    this._cacheCtx = null;
+  }
+
+  /**
+   * Starts an animation tween.
+   */
+  to(config: Omit<TweenConfig, 'node'>) {
+    const tween = new Tween({ node: this, ...config });
+    tween.play();
+    return tween;
   }
 
   /**
@@ -237,11 +327,25 @@ export class Node {
         ctx.shadowOffsetY = this.props.shadowOffsetY || 0;
     }
 
+    if (this.props.opacity !== undefined) {
+        ctx.globalAlpha = ctx.globalAlpha * this.props.opacity;
+    }
+
+    if (this.props.globalCompositeOperation) {
+        ctx.globalCompositeOperation = this.props.globalCompositeOperation;
+    }
+
     const matrix = this.getTransform();
     // Use matrix for transformation
     ctx.transform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f);
     
-    this.draw(ctx, viewport);
+    if (this._cacheCanvas) {
+        const bounds = this.getSelfBounds();
+        const padding = 0; // Assuming 0 padding for simplicity, should track padding in state if needed
+        ctx.drawImage(this._cacheCanvas, bounds.x - padding, bounds.y - padding, this._cacheCanvas.width / (window.devicePixelRatio || 1), this._cacheCanvas.height / (window.devicePixelRatio || 1));
+    } else {
+        this.draw(ctx, viewport);
+    }
     
     ctx.restore();
   }
@@ -252,6 +356,53 @@ export class Node {
    */
   draw(_ctx: CanvasRenderingContext2D, _viewport?: Rect) {
     // To be implemented by subclasses
+  }
+
+  /**
+   * Serialize the node to a JSON object.
+   */
+  toJSON(): any {
+    const json: any = {
+      className: this.constructor.name,
+      props: { ...this.props }
+    };
+    
+    // Remove functions from props
+    for (const key in json.props) {
+      if (typeof json.props[key] === 'function') {
+        delete json.props[key];
+      }
+    }
+    
+    return json;
+  }
+
+  /**
+   * Exports the node and its children to a Data URL (Image).
+   */
+  toDataURL(options: { mimeType?: string, quality?: number, pixelRatio?: number, x?: number, y?: number, width?: number, height?: number } = {}): string {
+    const { mimeType = 'image/png', quality = 1, pixelRatio = 1 } = options;
+    let { x = 0, y = 0, width, height } = options;
+
+    if (width === undefined || height === undefined) {
+      const bounds = this.getSelfBounds();
+      width = bounds.width || 500;
+      height = bounds.height || 500;
+      x = bounds.x;
+      y = bounds.y;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * pixelRatio;
+    canvas.height = height * pixelRatio;
+    const ctx = canvas.getContext('2d')!;
+
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.translate(-x, -y);
+
+    this.render(ctx);
+
+    return canvas.toDataURL(mimeType, quality);
   }
 
   /**

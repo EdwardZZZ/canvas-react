@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Circle } from './Circle';
+import { Ellipse } from './Ellipse';
+import { RegularPolygon } from './RegularPolygon';
+import { Star } from './Star';
+import { Arc } from './Arc';
 import { Text } from './Text';
 import { Line } from './Line';
 import { Image } from './Image';
@@ -13,6 +17,7 @@ describe('Shapes Core', () => {
     ctx = {
       beginPath: vi.fn(),
       arc: vi.fn(),
+      ellipse: vi.fn(),
       fill: vi.fn(),
       closePath: vi.fn(),
       fillText: vi.fn(),
@@ -54,12 +59,50 @@ describe('Shapes Core', () => {
     });
   });
 
+  describe('Ellipse', () => {
+    it('draws an ellipse', () => {
+      const ellipse = new Ellipse({ radiusX: 20, radiusY: 10, fill: 'red' });
+      ellipse.draw(ctx);
+      expect(ctx.ellipse).toHaveBeenCalledWith(0, 0, 20, 10, 0, 0, Math.PI * 2);
+      expect(ctx.fillStyle).toBe('red');
+    });
+  });
+
+  describe('RegularPolygon', () => {
+    it('draws a polygon', () => {
+      const poly = new RegularPolygon({ sides: 6, radius: 20, fill: 'green' });
+      poly.draw(ctx);
+      expect(ctx.moveTo).toHaveBeenCalled();
+      expect(ctx.lineTo).toHaveBeenCalled();
+      expect(ctx.fill).toHaveBeenCalled();
+    });
+  });
+
+  describe('Star', () => {
+    it('draws a star', () => {
+      const star = new Star({ numPoints: 5, innerRadius: 10, outerRadius: 20, fill: 'yellow' });
+      star.draw(ctx);
+      expect(ctx.moveTo).toHaveBeenCalled();
+      expect(ctx.lineTo).toHaveBeenCalled();
+      expect(ctx.fill).toHaveBeenCalled();
+    });
+  });
+
+  describe('Arc', () => {
+    it('draws an arc', () => {
+      const arc = new Arc({ innerRadius: 10, outerRadius: 20, angle: Math.PI, fill: 'blue' });
+      arc.draw(ctx);
+      expect(ctx.arc).toHaveBeenCalledTimes(2);
+      expect(ctx.fill).toHaveBeenCalled();
+    });
+  });
+
   describe('Text', () => {
     it('draws text with correct properties', () => {
       const text = new Text({ text: 'Hello', fontSize: 24, fill: 'red' });
       text.draw(ctx);
       
-      expect(ctx.font).toBe('24px Arial');
+      expect(ctx.font).toBe('normal normal normal 24px Arial');
       expect(ctx.fillStyle).toBe('red');
       expect(ctx.fillText).toHaveBeenCalledWith('Hello', 0, 0);
     });

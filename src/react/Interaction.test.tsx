@@ -17,7 +17,10 @@ describe('Interaction System', () => {
       fillRect: vi.fn(),
       beginPath: vi.fn(),
       arc: vi.fn(),
+      rect: vi.fn(),
       fill: vi.fn(),
+      stroke: vi.fn(),
+      setLineDash: vi.fn(),
       closePath: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
 

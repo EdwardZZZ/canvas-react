@@ -11,6 +11,11 @@ describe('Engine Core', () => {
     rotate: vi.fn(),
     scale: vi.fn(),
     fillRect: vi.fn(),
+    beginPath: vi.fn(),
+    rect: vi.fn(),
+    fill: vi.fn(),
+    stroke: vi.fn(),
+    setLineDash: vi.fn(),
   } as unknown as CanvasRenderingContext2D);
 
   describe('Node', () => {
@@ -73,6 +78,26 @@ describe('Engine Core', () => {
         const bounds = node.getGlobalBounds();
         // w=50*2=100, h=50*2=100
         expect(bounds).toEqual({ x: 0, y: 0, width: 100, height: 100 });
+    });
+
+    it('serializes to JSON correctly', () => {
+      const node = new Node({ x: 10, y: 20, fill: 'red', onClick: () => {} });
+      const json = node.toJSON();
+      
+      expect(json.className).toBe('Node');
+      expect(json.props.x).toBe(10);
+      expect(json.props.y).toBe(20);
+      expect(json.props.fill).toBe('red');
+      expect(json.props.onClick).toBeUndefined(); // Functions should be removed
+    });
+
+    it('creates a Tween animation', () => {
+      const node = new Node({ x: 0 });
+      const tween = node.to({ x: 100, duration: 1 });
+      
+      expect(tween).toBeDefined();
+      expect((tween as any).isRunning).toBe(true);
+      tween.destroy();
     });
   });
 
@@ -141,6 +166,19 @@ describe('Engine Core', () => {
         // MinX=0, MinY=0, MaxX=30, MaxY=30
         expect(bounds).toEqual({ x: 0, y: 0, width: 30, height: 30 });
     });
+
+    it('serializes to JSON with children', () => {
+      const container = new Container({ x: 10 });
+      const child = new Node({ y: 20 });
+      container.add(child);
+      
+      const json = container.toJSON();
+      expect(json.className).toBe('Container');
+      expect(json.props.x).toBe(10);
+      expect(json.children.length).toBe(1);
+      expect(json.children[0].className).toBe('Node');
+      expect(json.children[0].props.y).toBe(20);
+    });
   });
 
   describe('Rect', () => {
@@ -151,7 +189,8 @@ describe('Engine Core', () => {
       rect.draw(ctx);
       
       expect(ctx.fillStyle).toBe('red');
-      expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 100, 50);
+      expect(ctx.rect).toHaveBeenCalledWith(0, 0, 100, 50);
+      expect(ctx.fill).toHaveBeenCalled();
     });
   });
 });

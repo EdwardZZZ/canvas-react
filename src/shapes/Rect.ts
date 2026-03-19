@@ -6,7 +6,7 @@ import { Node, NodeProps } from '../core/Node';
 export interface RectProps extends NodeProps {
   width?: number;
   height?: number;
-  fill?: string;
+  cornerRadius?: number | number[];
 }
 
 /**
@@ -19,9 +19,37 @@ export class Rect extends Node {
    * Draws the rectangle.
    */
   draw(ctx: CanvasRenderingContext2D) {
-    const { width = 100, height = 100, fill = 'black' } = this.props;
-    ctx.fillStyle = fill;
-    ctx.fillRect(0, 0, width, height);
+    const { width = 100, height = 100, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin, cornerRadius } = this.props;
+    
+    ctx.beginPath();
+    
+    if (cornerRadius) {
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(0, 0, width, height, cornerRadius);
+      } else {
+        // Fallback or just rect
+        ctx.rect(0, 0, width, height);
+      }
+    } else {
+      ctx.rect(0, 0, width, height);
+    }
+    
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    
+    if (stroke || lineWidth) {
+      ctx.strokeStyle = stroke || 'black';
+      ctx.lineWidth = lineWidth || 1;
+      if (lineCap) ctx.lineCap = lineCap;
+      if (lineJoin) ctx.lineJoin = lineJoin;
+      if (lineDash) {
+        ctx.setLineDash(lineDash);
+        if (lineDashOffset !== undefined) ctx.lineDashOffset = lineDashOffset;
+      }
+      ctx.stroke();
+    }
   }
 
   getSelfBounds() {

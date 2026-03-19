@@ -30,22 +30,34 @@
 
 ### 基础图形
 
-引擎支持矩形、圆形、文本、线条、Path (SVG) 和图片等基础图形。
+引擎支持矩形、圆形、椭圆、多边形、星形、扇形、文本、线条、Path (SVG) 和图片等丰富的基础图形。所有图形均支持 `fill` (填充) 和 `stroke` (描边) 属性。
 
 ```tsx
 import Canvas from './src/react/Canvas';
-import { Rect, Circle, Text, Line, Image, Path } from './src/react/Shapes';
+import { Rect, Circle, Ellipse, RegularPolygon, Star, Arc, Text, Line, Image, Path } from './src/react/Shapes';
 
 const App = () => (
   <Canvas width={800} height={600}>
-    {/* 基础矩形 */}
-    <Rect x={10} y={10} width={100} height={50} fill="red" />
+    {/* 基础矩形 (支持圆角和虚线边框) */}
+    <Rect x={10} y={10} width={100} height={50} fill="red" stroke="black" lineWidth={2} cornerRadius={10} lineDash={[5, 5]} />
     
     {/* 圆形 */}
     <Circle x={200} y={100} radius={30} fill="blue" />
     
-    {/* 文本 */}
-    <Text text="你好世界" x={10} y={100} fontSize={24} fill="#333" />
+    {/* 椭圆 */}
+    <Ellipse x={300} y={100} radiusX={40} radiusY={20} fill="green" />
+
+    {/* 正多边形 */}
+    <RegularPolygon x={400} y={100} sides={6} radius={30} fill="purple" />
+
+    {/* 星形 */}
+    <Star x={500} y={100} numPoints={5} innerRadius={15} outerRadius={30} fill="yellow" stroke="orange" />
+
+    {/* 扇形 / 圆弧 */}
+    <Arc x={600} y={100} innerRadius={10} outerRadius={30} angle={Math.PI} fill="cyan" />
+
+    {/* 文本 (支持换行和垂直对齐) */}
+    <Text text="你好世界\n第二行" x={10} y={100} fontSize={24} fill="#333" verticalAlign="middle" />
     
     {/* SVG 路径 */}
     <Path 
@@ -96,34 +108,45 @@ const Scene = () => (
 );
 ```
 
-### 动画
+### 动画 (Tweening)
 
-使用 `useFrame` hook 在每一帧更新组件状态。
+除了基础的 `useFrame`，引擎现在内置了补间动画 (Tweening) 系统。你可以直接对任何场景节点使用声明式动画。
 
 ```tsx
-import { useState } from 'react';
-import { useFrame } from './src/react/CanvasContext';
+import { useEffect, useRef } from 'react';
 import { Rect } from './src/react/Shapes';
+import { Node } from './src/core/Node';
 
-const RotatingBox = () => {
-  const [rotation, setRotation] = useState(0);
+const AnimatedBox = () => {
+  const nodeRef = useRef<Node>(null);
 
-  useFrame((time) => {
-    // time 是经过的时间（毫秒）
-    setRotation(time * 0.001);
-  });
+  useEffect(() => {
+    if (nodeRef.current) {
+      // 在 1 秒内平滑过渡到指定属性
+      nodeRef.current.to({
+        x: 300,
+        rotation: Math.PI,
+        opacity: 0.5,
+        duration: 1,
+        easing: (t) => t * (2 - t) // 可选的缓动函数
+      });
+    }
+  }, []);
 
-  return (
-    <Rect 
-      x={250} 
-      y={250} 
-      width={100} 
-      height={100} 
-      rotation={rotation} 
-      fill="purple" 
-    />
-  );
+  return <Rect ref={nodeRef} width={100} height={100} fill="purple" />;
 };
+```
+
+### 状态导出与序列化
+
+引擎支持将画布或任意节点导出为图片或 JSON。
+
+```tsx
+// 导出为图片 (DataURL)
+const dataUrl = canvasRef.current.toDataURL({ mimeType: 'image/png', quality: 1, pixelRatio: 2 });
+
+// 序列化场景图
+const json = nodeRef.current.toJSON();
 ```
 
 ## API 参考
@@ -133,7 +156,8 @@ const RotatingBox = () => {
 - `width`: number (默认: 500)
 - `height`: number (默认: 500)
 - `style`: CSSProperties
-- `onClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseLeave`: 全局事件处理器
+- `onClick`, `onDoubleClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseLeave`, `onWheel`: 全局事件处理器
+- **方法**: `toDataURL(options)` 导出画布图片
 
 ### 通用属性 (所有图形)
 - `x`: number (默认: 0)
@@ -141,34 +165,52 @@ const RotatingBox = () => {
 - `rotation`: number (弧度, 默认: 0)
 - `scaleX`: number (默认: 1)
 - `scaleY`: number (默认: 1)
+- `opacity`: number (全局透明度)
+- `globalCompositeOperation`: string (混合模式)
 - `zIndex`: number (默认: 0) - 值越大渲染层级越高
 - `draggable`: boolean (默认: false)
-- `cursor`: string (默认: 'default') - 悬停时的 CSS 光标样式 (如 'pointer', 'grab')
-- `filter`: string - CSS 滤镜字符串 (如 'blur(5px)')
-- `shadowColor`: string
-- `shadowBlur`: number
-- `shadowOffsetX`: number
-- `shadowOffsetY`: number
-- **事件**: `onClick`, `onMouseEnter`, `onMouseLeave`, `onDragStart`, `onDragMove`, `onDragEnd`
+- `cursor`: string (默认: 'default') - 悬停时的 CSS 光标样式
+- **描边与填充**: `fill`, `stroke`, `lineWidth`, `lineDash`, `lineDashOffset`, `lineCap`, `lineJoin`
+- **滤镜与阴影**: `filter`, `shadowColor`, `shadowBlur`, `shadowOffsetX`, `shadowOffsetY`
+- **事件**: `onClick`, `onDoubleClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseEnter`, `onMouseLeave`, `onWheel`, `onDragStart`, `onDragMove`, `onDragEnd`
+- **节点方法**: `cache()`, `clearCache()`, `toJSON()`, `toDataURL()`, `to(config)`
 
 ### 图形特定属性
 
 #### `<Rect>`
 - `width`: number
 - `height`: number
-- `fill`: string (颜色)
+- `cornerRadius`: number | number[] (圆角)
 
 #### `<Circle>`
 - `radius`: number
-- `fill`: string
+
+#### `<Ellipse>`
+- `radiusX`: number
+- `radiusY`: number
+
+#### `<RegularPolygon>`
+- `sides`: number (边数)
+- `radius`: number
+
+#### `<Star>`
+- `numPoints`: number (角数)
+- `innerRadius`: number
+- `outerRadius`: number
+
+#### `<Arc>`
+- `innerRadius`: number
+- `outerRadius`: number
+- `angle`: number (弧度)
 
 #### `<Text>`
 - `text`: string
 - `fontSize`: number
 - `fontFamily`: string
-- `fill`: string
+- `fontStyle`, `fontWeight`, `fontVariant`: 字体样式
 - `width`: number (最大宽度，用于自动换行)
 - `align`: 'left' | 'center' | 'right'
+- `verticalAlign`: 'top' | 'middle' | 'bottom'
 - `lineHeight`: number
 
 #### `<Path>`

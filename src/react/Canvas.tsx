@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState, HTMLAttributes, FC, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from 'react';
+import React, { useRef, useEffect, useState, HTMLAttributes, FC, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent, useImperativeHandle } from 'react';
 import { Container } from '../core/Container';
 import { SceneContext, RenderContext, RenderLoop } from './CanvasContext';
-import { InteractionEvent, Node } from '../core/Node';
+import { InteractionEvent, Node, CanvasEvents } from '../core/Node';
 import { DevTools } from './DevTools';
 
 /**
@@ -34,11 +34,17 @@ export interface CanvasProps extends HTMLAttributes<HTMLCanvasElement> {
   debug?: boolean; // Enable DevTools
 }
 
+export interface CanvasRef {
+  stage: Container;
+  canvas: HTMLCanvasElement | null;
+  toDataURL: (options?: any) => string;
+}
+
 /**
  * The root component of the React Canvas Engine.
  * Sets up the rendering context, scene graph root, and event listeners.
  */
-const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, children, ...rest }) => {
+const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height = 500, debug = false, children, ...rest }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Persistent stage instance across re-renders
   const [stage] = useState(() => new Container());
@@ -49,6 +55,17 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
   
   // Track if a redraw is needed
   const isDirtyRef = useRef(true);
+
+  useImperativeHandle(ref, () => ({
+    stage,
+    canvas: canvasRef.current,
+    toDataURL: (options) => {
+        if (canvasRef.current) {
+            return canvasRef.current.toDataURL(options?.mimeType, options?.quality);
+        }
+        return '';
+    }
+  }), [stage]);
 
   useEffect(() => {
     // Override requestRedraw on stage to trigger our dirty flag
@@ -140,7 +157,39 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
      return event;
   }
 
-  const getEventCoordinates = (e: ReactMouseEvent | ReactTouchEvent) => {
+  /**
+   * Dispatches an event starting from the target node and bubbling up.
+   */
+  const dispatchEvent = (
+      node: Node, 
+      originalEvent: ReactMouseEvent | ReactTouchEvent | React.WheelEvent | MouseEvent | TouchEvent | WheelEvent,
+      eventName: keyof CanvasEvents,
+      type: string,
+      globalX: number,
+      globalY: number
+  ) => {
+      let current: Node | null = node;
+      let event: InteractionEvent | null = null;
+
+      while (current) {
+          if (!event) {
+             event = createEvent(node, originalEvent, type, globalX, globalY);
+          }
+          event.currentTarget = current;
+
+          const handler = current.events[eventName] as ((e: InteractionEvent) => void) | undefined;
+          if (handler) {
+              handler(event);
+          }
+
+          if (event.cancelBubble) {
+              break;
+          }
+          current = current.parent;
+      }
+  }
+
+  const getEventCoordinates = (e: ReactMouseEvent | ReactTouchEvent | React.WheelEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return null;
 
@@ -178,13 +227,17 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
 
     const hitNode = stage.hitTest(coords);
 
-    if (hitNode && hitNode.draggable) {
-       setIsDragging(true);
-       setDragNode(hitNode);
+    if (hitNode) {
+       dispatchEvent(hitNode, e, 'onMouseDown', 'mousedown', coords.x, coords.y);
        
-       if (hitNode.events.onDragStart) {
-           const event = createEvent(hitNode, e, 'dragstart', coords.x, coords.y);
-           hitNode.events.onDragStart(event);
+       if (hitNode.draggable) {
+           setIsDragging(true);
+           setDragNode(hitNode);
+           
+           if (hitNode.events.onDragStart) {
+               const event = createEvent(hitNode, e, 'dragstart', coords.x, coords.y);
+               hitNode.events.onDragStart(event);
+           }
        }
     }
     
@@ -197,8 +250,15 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
   };
 
   const handlePointerUp = (e: ReactMouseEvent<HTMLCanvasElement> | ReactTouchEvent<HTMLCanvasElement>) => {
+    const coords = getEventCoordinates(e);
+    if (coords) {
+       const hitNode = stage.hitTest(coords);
+       if (hitNode) {
+           dispatchEvent(hitNode, e, 'onMouseUp', 'mouseup', coords.x, coords.y);
+       }
+    }
+
     if (isDragging && dragNode) {
-       const coords = getEventCoordinates(e);
        // Note: touchend has no touches, only changedTouches. getEventCoordinates handles this.
        
        if (coords && dragNode.events.onDragEnd) {
@@ -222,9 +282,8 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
 
     const hitNode = stage.hitTest(coords);
 
-    if (hitNode && hitNode.events.onClick) {
-       const event = createEvent(hitNode, e, 'click', coords.x, coords.y);
-       hitNode.events.onClick(event);
+    if (hitNode) {
+       dispatchEvent(hitNode, e, 'onClick', 'click', coords.x, coords.y);
     }
     
     if (rest.onClick) {
@@ -232,10 +291,31 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
     }
   };
 
+  const handleDoubleClick = (e: ReactMouseEvent<HTMLCanvasElement>) => {
+    const coords = getEventCoordinates(e);
+    if (!coords) return;
+
+    const hitNode = stage.hitTest(coords);
+
+    if (hitNode) {
+       dispatchEvent(hitNode, e, 'onDoubleClick', 'dblclick', coords.x, coords.y);
+    }
+    
+    if (rest.onDoubleClick) {
+        rest.onDoubleClick(e);
+    }
+  };
+
   const handlePointerMove = (e: ReactMouseEvent<HTMLCanvasElement> | ReactTouchEvent<HTMLCanvasElement>) => {
     const coords = getEventCoordinates(e);
     if (!coords) return;
 
+    const hitNode = stage.hitTest(coords);
+
+    if (hitNode) {
+        dispatchEvent(hitNode, e, 'onMouseMove', 'mousemove', coords.x, coords.y);
+    }
+    
     // Handle Dragging
     if (isDragging && dragNode) {
         // Prevent scrolling when dragging
@@ -249,24 +329,17 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
         }
     }
 
-    // Hover logic (Mouse only usually, but some stylus behave like mouse)
-    // For touch, we don't usually have "hover", but we might want to track enter/leave if dragging?
-    // Current hover logic is fine for mouse. For touch, move is usually drag.
-    
-    const hitNode = stage.hitTest(coords);
     const lastHitNode = lastHitNodeRef.current;
 
     if (lastHitNode !== hitNode) {
         // Leave previous
-        if (lastHitNode && lastHitNode.events.onMouseLeave) {
-             const event = createEvent(lastHitNode, e, 'mouseleave', coords.x, coords.y);
-             lastHitNode.events.onMouseLeave(event);
+        if (lastHitNode) {
+             dispatchEvent(lastHitNode, e, 'onMouseLeave', 'mouseleave', coords.x, coords.y);
         }
         
         // Enter new
-        if (hitNode && hitNode.events.onMouseEnter) {
-             const event = createEvent(hitNode, e, 'mouseenter', coords.x, coords.y);
-             hitNode.events.onMouseEnter(event);
+        if (hitNode) {
+             dispatchEvent(hitNode, e, 'onMouseEnter', 'mouseenter', coords.x, coords.y);
         }
         
         lastHitNodeRef.current = hitNode;
@@ -300,10 +373,9 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
   const handleMouseLeave = (e: ReactMouseEvent<HTMLCanvasElement>) => {
       // If mouse leaves the canvas, we should also trigger mouseleave on the currently hovered node
       const lastHitNode = lastHitNodeRef.current;
-      if (lastHitNode && lastHitNode.events.onMouseLeave) {
+      if (lastHitNode) {
           const coords = getEventCoordinates(e) || { x: 0, y: 0 }; // Coordinates might be outside
-          const event = createEvent(lastHitNode, e, 'mouseleave', coords.x, coords.y);
-          lastHitNode.events.onMouseLeave(event);
+          dispatchEvent(lastHitNode, e, 'onMouseLeave', 'mouseleave', coords.x, coords.y);
       }
       lastHitNodeRef.current = null;
 
@@ -312,6 +384,21 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
       }
   }
 
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+      const coords = getEventCoordinates(e);
+      if (!coords) return;
+
+      const hitNode = stage.hitTest(coords);
+
+      if (hitNode) {
+          dispatchEvent(hitNode, e, 'onWheel', 'wheel', coords.x, coords.y);
+      }
+      
+      if (rest.onWheel) {
+          rest.onWheel(e);
+      }
+  };
+
   return (
     <RenderContext.Provider value={renderLoop}>
       <SceneContext.Provider value={stage}>
@@ -319,10 +406,12 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
             <canvas 
               ref={canvasRef} 
               onClick={handleClick}
+              onDoubleClick={handleDoubleClick}
               onMouseDown={handlePointerDown}
               onMouseUp={handlePointerUp}
               onMouseMove={handlePointerMove}
               onMouseLeave={handleMouseLeave}
+              onWheel={handleWheel}
               onTouchStart={handlePointerDown}
               onTouchMove={handlePointerMove}
               onTouchEnd={handlePointerUp}
@@ -335,6 +424,6 @@ const Canvas: FC<CanvasProps> = ({ width = 500, height = 500, debug = false, chi
       </SceneContext.Provider>
     </RenderContext.Provider>
   );
-};
+});
 
 export default Canvas;

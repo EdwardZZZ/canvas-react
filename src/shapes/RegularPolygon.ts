@@ -1,25 +1,30 @@
 import { Node, NodeProps } from '../core/Node';
 
-/**
- * Properties for a Circle node.
- */
-export interface CircleProps extends NodeProps {
+export interface RegularPolygonProps extends NodeProps {
+  sides?: number;
   radius?: number;
 }
 
-/**
- * A circular shape node.
- */
-export class Circle extends Node {
-  declare props: CircleProps;
+export class RegularPolygon extends Node {
+  declare props: RegularPolygonProps;
 
-  /**
-   * Draws the circle on the canvas.
-   */
   draw(ctx: CanvasRenderingContext2D) {
-    const { radius = 50, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
+    const { sides = 5, radius = 50, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
+    if (sides < 3) return;
+
     ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    for (let i = 0; i < sides; i++) {
+      // Starting from top center
+      const angle = (i * 2 * Math.PI) / sides - Math.PI / 2;
+      const x = radius * Math.cos(angle);
+      const y = radius * Math.sin(angle);
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.closePath();
     
     if (fill) {
       ctx.fillStyle = fill;
@@ -37,27 +42,15 @@ export class Circle extends Node {
       }
       ctx.stroke();
     }
-    
-    ctx.closePath();
   }
 
   getSelfBounds() {
     const { radius = 50 } = this.props;
-    // Circle is drawn at 0,0 center, so bounds are -r to r
     return { 
         x: -radius, 
         y: -radius, 
         width: radius * 2, 
         height: radius * 2 
     };
-  }
-
-  /**
-   * Checks if a point is inside the circle using the distance formula.
-   * x^2 + y^2 &lt;= r^2
-   */
-  isPointInShape(x: number, y: number): boolean {
-    const { radius = 50 } = this.props;
-    return x * x + y * y <= radius * radius;
   }
 }

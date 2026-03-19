@@ -49,6 +49,12 @@ export class Container extends Node {
     }
   }
 
+  toJSON(): any {
+    const json = super.toJSON();
+    json.children = this.children.map(child => child.toJSON());
+    return json;
+  }
+
   getSelfBounds(): Rect {
     // Union of all children global bounds, transformed back to local space?
     // Actually getSelfBounds implies bounds in *local* space (before this node's transform).

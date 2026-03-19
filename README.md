@@ -30,22 +30,34 @@ A lightweight, high-performance Canvas rendering engine built with TypeScript an
 
 ### Basic Shapes
 
-The engine supports basic shapes like Rectangle, Circle, Text, Line, Path (SVG), and Image.
+The engine supports a rich set of basic shapes including Rectangle, Circle, Ellipse, RegularPolygon, Star, Arc, Text, Line, Path (SVG), and Image. All shapes support `fill` and `stroke` properties.
 
 ```tsx
 import Canvas from './src/react/Canvas';
-import { Rect, Circle, Text, Line, Image, Path } from './src/react/Shapes';
+import { Rect, Circle, Ellipse, RegularPolygon, Star, Arc, Text, Line, Image, Path } from './src/react/Shapes';
 
 const App = () => (
   <Canvas width={800} height={600}>
-    {/* Basic Rectangle */}
-    <Rect x={10} y={10} width={100} height={50} fill="red" />
+    {/* Basic Rectangle (supports rounded corners and dashed strokes) */}
+    <Rect x={10} y={10} width={100} height={50} fill="red" stroke="black" lineWidth={2} cornerRadius={10} lineDash={[5, 5]} />
     
     {/* Circle */}
     <Circle x={200} y={100} radius={30} fill="blue" />
     
-    {/* Text */}
-    <Text text="Hello World" x={10} y={100} fontSize={24} fill="#333" />
+    {/* Ellipse */}
+    <Ellipse x={300} y={100} radiusX={40} radiusY={20} fill="green" />
+
+    {/* Regular Polygon */}
+    <RegularPolygon x={400} y={100} sides={6} radius={30} fill="purple" />
+
+    {/* Star */}
+    <Star x={500} y={100} numPoints={5} innerRadius={15} outerRadius={30} fill="yellow" stroke="orange" />
+
+    {/* Arc / Sector */}
+    <Arc x={600} y={100} innerRadius={10} outerRadius={30} angle={Math.PI} fill="cyan" />
+
+    {/* Text (supports multiline and vertical alignment) */}
+    <Text text="Hello World\nLine 2" x={10} y={100} fontSize={24} fill="#333" verticalAlign="middle" />
     
     {/* SVG Path */}
     <Path 
@@ -96,34 +108,45 @@ const Scene = () => (
 );
 ```
 
-### Animation
+### Animation (Tweening)
 
-Use the `useFrame` hook to update component state on every frame.
+Besides the `useFrame` hook, the engine now has a built-in tweening system for declarative animations on any node.
 
 ```tsx
-import { useState } from 'react';
-import { useFrame } from './src/react/CanvasContext';
+import { useEffect, useRef } from 'react';
 import { Rect } from './src/react/Shapes';
+import { Node } from './src/core/Node';
 
-const RotatingBox = () => {
-  const [rotation, setRotation] = useState(0);
+const AnimatedBox = () => {
+  const nodeRef = useRef<Node>(null);
 
-  useFrame((time) => {
-    // time is the elapsed time in milliseconds
-    setRotation(time * 0.001);
-  });
+  useEffect(() => {
+    if (nodeRef.current) {
+      // Smoothly transition to the specified properties over 1 second
+      nodeRef.current.to({
+        x: 300,
+        rotation: Math.PI,
+        opacity: 0.5,
+        duration: 1,
+        easing: (t) => t * (2 - t) // Optional easing function
+      });
+    }
+  }, []);
 
-  return (
-    <Rect 
-      x={250} 
-      y={250} 
-      width={100} 
-      height={100} 
-      rotation={rotation} 
-      fill="purple" 
-    />
-  );
+  return <Rect ref={nodeRef} width={100} height={100} fill="purple" />;
 };
+```
+
+### Export & Serialization
+
+The engine supports exporting the canvas or any node to an image or JSON.
+
+```tsx
+// Export as Image (DataURL)
+const dataUrl = canvasRef.current.toDataURL({ mimeType: 'image/png', quality: 1, pixelRatio: 2 });
+
+// Serialize Scene Graph
+const json = nodeRef.current.toJSON();
 ```
 
 ## API Reference
@@ -133,7 +156,8 @@ The root container for the scene.
 - `width`: number (default: 500)
 - `height`: number (default: 500)
 - `style`: CSSProperties
-- `onClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseLeave`: Global event handlers
+- `onClick`, `onDoubleClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseLeave`, `onWheel`: Global event handlers
+- **Methods**: `toDataURL(options)` Export canvas image
 
 ### Common Props (All Shapes)
 - `x`: number (default: 0)
@@ -141,34 +165,52 @@ The root container for the scene.
 - `rotation`: number (radians, default: 0)
 - `scaleX`: number (default: 1)
 - `scaleY`: number (default: 1)
+- `opacity`: number (global alpha)
+- `globalCompositeOperation`: string (blend mode)
 - `zIndex`: number (default: 0) - Higher values render on top
 - `draggable`: boolean (default: false)
-- `cursor`: string (default: 'default') - CSS cursor style on hover (e.g. 'pointer', 'grab')
-- `filter`: string - CSS filter string (e.g. 'blur(5px)')
-- `shadowColor`: string
-- `shadowBlur`: number
-- `shadowOffsetX`: number
-- `shadowOffsetY`: number
-- **Events**: `onClick`, `onMouseEnter`, `onMouseLeave`, `onDragStart`, `onDragMove`, `onDragEnd`
+- `cursor`: string (default: 'default') - CSS cursor style on hover
+- **Stroke & Fill**: `fill`, `stroke`, `lineWidth`, `lineDash`, `lineDashOffset`, `lineCap`, `lineJoin`
+- **Filters & Shadows**: `filter`, `shadowColor`, `shadowBlur`, `shadowOffsetX`, `shadowOffsetY`
+- **Events**: `onClick`, `onDoubleClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseEnter`, `onMouseLeave`, `onWheel`, `onDragStart`, `onDragMove`, `onDragEnd`
+- **Node Methods**: `cache()`, `clearCache()`, `toJSON()`, `toDataURL()`, `to(config)`
 
 ### Shape Specific Props
 
 #### `<Rect>`
 - `width`: number
 - `height`: number
-- `fill`: string (color)
+- `cornerRadius`: number | number[] (rounded corners)
 
 #### `<Circle>`
 - `radius`: number
-- `fill`: string
+
+#### `<Ellipse>`
+- `radiusX`: number
+- `radiusY`: number
+
+#### `<RegularPolygon>`
+- `sides`: number (number of sides)
+- `radius`: number
+
+#### `<Star>`
+- `numPoints`: number (number of points)
+- `innerRadius`: number
+- `outerRadius`: number
+
+#### `<Arc>`
+- `innerRadius`: number
+- `outerRadius`: number
+- `angle`: number (radians)
 
 #### `<Text>`
 - `text`: string
 - `fontSize`: number
 - `fontFamily`: string
-- `fill`: string
+- `fontStyle`, `fontWeight`, `fontVariant`: Font styling
 - `width`: number (max width for wrapping)
 - `align`: 'left' | 'center' | 'right'
+- `verticalAlign`: 'top' | 'middle' | 'bottom'
 - `lineHeight`: number
 
 #### `<Path>`

@@ -5,9 +5,6 @@ import { Node, NodeProps } from '../core/Node';
  */
 export interface PathProps extends NodeProps {
   data: string; // SVG path data, e.g., "M10 10 H 90 V 90 H 10 L 10 10"
-  fill?: string;
-  stroke?: string;
-  lineWidth?: number;
 }
 
 /**
@@ -44,7 +41,7 @@ export class Path extends Node {
    * Draws the SVG path.
    */
   draw(ctx: CanvasRenderingContext2D) {
-    const { data, fill, stroke, lineWidth = 1 } = this.props;
+    const { data, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     
     const path = new Path2D(data);
     
@@ -53,9 +50,15 @@ export class Path extends Node {
       ctx.fill(path);
     }
     
-    if (stroke) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = lineWidth;
+    if (stroke || lineWidth) {
+      ctx.strokeStyle = stroke || 'black';
+      ctx.lineWidth = lineWidth || 1;
+      if (lineCap) ctx.lineCap = lineCap;
+      if (lineJoin) ctx.lineJoin = lineJoin;
+      if (lineDash) {
+        ctx.setLineDash(lineDash);
+        if (lineDashOffset !== undefined) ctx.lineDashOffset = lineDashOffset;
+      }
       ctx.stroke(path);
     }
   }

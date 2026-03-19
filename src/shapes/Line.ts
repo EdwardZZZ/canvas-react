@@ -5,10 +5,6 @@ import { Node, NodeProps } from '../core/Node';
  */
 export interface LineProps extends NodeProps {
   points: number[]; // [x1, y1, x2, y2, ...]
-  stroke?: string;
-  lineWidth?: number;
-  lineCap?: CanvasLineCap;
-  lineJoin?: CanvasLineJoin;
   closed?: boolean;
 }
 
@@ -52,10 +48,13 @@ export class Line extends Node {
   draw(ctx: CanvasRenderingContext2D) {
     const { 
       points = [], 
-      stroke = 'black', 
-      lineWidth = 1,
-      lineCap = 'butt',
-      lineJoin = 'miter',
+      fill,
+      stroke, 
+      lineWidth,
+      lineDash,
+      lineDashOffset,
+      lineCap,
+      lineJoin,
       closed = false
     } = this.props;
 
@@ -72,10 +71,21 @@ export class Line extends Node {
       ctx.closePath();
     }
 
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = lineWidth;
-    ctx.lineCap = lineCap;
-    ctx.lineJoin = lineJoin;
-    ctx.stroke();
+    if (fill && closed) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+
+    if (stroke || lineWidth) {
+      ctx.strokeStyle = stroke || 'black';
+      ctx.lineWidth = lineWidth || 1;
+      if (lineCap) ctx.lineCap = lineCap;
+      if (lineJoin) ctx.lineJoin = lineJoin;
+      if (lineDash) {
+        ctx.setLineDash(lineDash);
+        if (lineDashOffset !== undefined) ctx.lineDashOffset = lineDashOffset;
+      }
+      ctx.stroke();
+    }
   }
 }
