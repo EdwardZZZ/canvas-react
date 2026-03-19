@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import Canvas from '../src/react/Canvas';
-import { Rect, Circle, Text, Group, Image, Line, Path, Transformer } from '../src/react/Shapes';
+import { useState, useRef } from 'react';
+import Canvas, { CanvasRef } from '../src/react/Canvas';
+import { Rect, Circle, Ellipse, RegularPolygon, Star, Arc, Text, Group, Image, Line, Path, Transformer } from '../src/react/Shapes';
 import { useFrame } from '../src/react/CanvasContext';
+import { Filters } from '../src/shapes/Image';
 import { InteractionEvent, Node } from '../src/core/Node';
 
 const ClippingDemo = () => {
@@ -130,7 +131,7 @@ const DragDemo = () => {
                 draggable={true}
                 onDragStart={() => setColor('orange')}
                 onDragEnd={() => setColor('purple')}
-                onDragMove={(e) => {
+                onDragMove={(e: InteractionEvent) => {
                     // Update position relative to the group
                     // Mouse coordinates in e.globalX/Y are global.
                     // Group is at 100, 520.
@@ -170,7 +171,7 @@ const InteractiveScene = () => {
         width={100} 
         height={50} 
         fill={active ? "orange" : "blue"}
-        onClick={(e) => {
+        onClick={(e: InteractionEvent) => {
             console.log("Rect Clicked!", e);
             setActive(!active);
         }}
@@ -287,15 +288,26 @@ const AssetAndFilterDemo = () => {
                 <Text text="Shadow" x={5} y={60} fontSize={12} />
             </Group>
             
-            {/* Grayscale Image */}
+            {/* Pixel Grayscale Image */}
             <Group x={160} y={0}>
                 <Image 
                     src="https://vitejs.dev/logo.svg" 
                     width={50} 
                     height={50}
-                    filter="grayscale(100%)" 
+                    filters={[Filters.Grayscale]} 
                 />
-                <Text text="Gray" x={15} y={60} fontSize={12} />
+                <Text text="Pixel Gray" x={0} y={60} fontSize={12} />
+            </Group>
+
+            {/* Pixel Invert Image */}
+            <Group x={240} y={0}>
+                <Image 
+                    src="https://vitejs.dev/logo.svg" 
+                    width={50} 
+                    height={50}
+                    filters={[Filters.Invert, Filters.Brightness(50)]} 
+                />
+                <Text text="Invert+Bright" x={-10} y={60} fontSize={12} />
             </Group>
         </Group>
     );
@@ -303,12 +315,23 @@ const AssetAndFilterDemo = () => {
 
 function App() {
   const [debug, setDebug] = useState(false);
+  const canvasRef = useRef<CanvasRef>(null);
+
+  const handleExport = () => {
+      if (canvasRef.current) {
+          const url = canvasRef.current.toDataURL();
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'canvas-export.png';
+          a.click();
+      }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
       <h1>React Canvas Engine (TS)</h1>
       <p>
-        Declarative rendering with React components. 
+        Declarative rendering with React components. Scroll to zoom, drag background to pan.
         <button 
           onClick={() => setDebug(!debug)}
           style={{ 
@@ -323,9 +346,23 @@ function App() {
         >
           {debug ? 'Disable DevTools' : 'Enable DevTools'}
         </button>
+        <button 
+          onClick={handleExport}
+          style={{ 
+            marginLeft: '10px', 
+            padding: '5px 10px', 
+            background: '#4CAF50', 
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Export Image
+        </button>
       </p>
       
-      <Canvas width={800} height={700} debug={debug} style={{ border: '1px solid #ddd', borderRadius: '8px' }}>
+      <Canvas ref={canvasRef} width={800} height={700} debug={debug} interactive={true} style={{ border: '1px solid #ddd', borderRadius: '8px' }}>
         {/* Background */}
         <Rect width={800} height={700} fill="#f9f9f9" />
         
@@ -336,7 +373,7 @@ function App() {
         <Text text="Declarative Canvas" x={20} y={40} fontSize={24} fill="#333" />
         
         {/* Static Elements */}
-        <Rect x={50} y={80} width={100} height={100} fill="rgba(255, 0, 0, 0.2)" />
+        <Rect x={50} y={80} width={100} height={100} fill="rgba(255, 0, 0, 0.2)" cornerRadius={[10, 20, 10, 20]} />
 
         {/* New Shapes Demo */}
         <Group x={50} y={200}>
@@ -344,12 +381,22 @@ function App() {
           
           {/* Line */}
           <Line 
-            points={[0, 0, 50, 50, 100, 0]} 
+            points={[0, 0, 50, 50, 100, 0, 50, -50]} 
+            fill="rgba(0, 0, 255, 0.2)"
             stroke="blue" 
             lineWidth={3} 
             lineCap="round" 
             lineJoin="round" 
+            closed={true}
           />
+
+          <Ellipse x={160} y={20} radiusX={40} radiusY={20} fill="green" stroke="black" lineWidth={2} />
+          
+          <RegularPolygon x={250} y={20} sides={6} radius={30} fill="purple" />
+          
+          <Star x={340} y={20} numPoints={5} innerRadius={15} outerRadius={30} fill="yellow" stroke="orange" lineWidth={2} />
+          
+          <Arc x={430} y={20} innerRadius={15} outerRadius={30} angle={Math.PI * 1.5} fill="cyan" stroke="blue" />
           
           {/* Image (using placeholder) */}
           <Group x={0} y={60}>

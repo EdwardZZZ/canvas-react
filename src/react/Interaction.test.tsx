@@ -100,9 +100,68 @@ describe('Interaction System', () => {
         });
 
         fireEvent.click(canvas, { clientX: 50, clientY: 50 });
+        fireEvent.doubleClick(canvas, { clientX: 50, clientY: 50 });
     }
-
+    
     expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles canvas interactive mode (pan and zoom)', () => {
+    const { container } = render(
+      <Canvas width={500} height={500} interactive={true}>
+        <Rect width={100} height={100} />
+      </Canvas>
+    );
+
+    const canvas = container.querySelector('canvas');
+    expect(canvas).toBeInTheDocument();
+
+    if (canvas) {
+        vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+            left: 0, top: 0, width: 500, height: 500, x: 0, y: 0, bottom: 500, right: 500, toJSON: () => {}
+        });
+
+        // Test Panning
+        // Mouse Down outside shape to start panning
+        fireEvent.mouseDown(canvas, { clientX: 200, clientY: 200 });
+        
+        // Mouse Move to pan
+        fireEvent.mouseMove(canvas, { clientX: 250, clientY: 250 });
+        
+        // Mouse Up to end panning
+        fireEvent.mouseUp(canvas, { clientX: 250, clientY: 250 });
+
+        // Test Zooming
+        fireEvent.wheel(canvas, { clientX: 250, clientY: 250, deltaY: 100 });
+    }
+  });
+
+  it('handles wheel events on shapes', () => {
+    const handleWheel = vi.fn();
+    const { container } = render(
+      <Canvas width={500} height={500}>
+        <Rect 
+          x={10} 
+          y={10} 
+          width={100} 
+          height={100} 
+          onWheel={handleWheel} 
+        />
+      </Canvas>
+    );
+
+    const canvas = container.querySelector('canvas');
+    expect(canvas).toBeInTheDocument();
+
+    if (canvas) {
+        vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+            left: 0, top: 0, width: 500, height: 500, x: 0, y: 0, bottom: 500, right: 500, toJSON: () => {}
+        });
+
+        fireEvent.wheel(canvas, { clientX: 50, clientY: 50, deltaY: 100 });
+    }
+    
+    expect(handleWheel).toHaveBeenCalledTimes(1);
   });
 
   it('ignores clicks outside shapes', () => {

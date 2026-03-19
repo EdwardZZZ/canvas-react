@@ -6,7 +6,7 @@ import { Star } from './Star';
 import { Arc } from './Arc';
 import { Text } from './Text';
 import { Line } from './Line';
-import { Image } from './Image';
+import { Image, Filters } from './Image';
 import { Path } from './Path';
 import { Assets } from '../core/Assets';
 
@@ -34,7 +34,7 @@ describe('Shapes Core', () => {
         return Promise.resolve(img);
     });
     
-    vi.spyOn(Assets, 'getImage').mockImplementation((url) => {
+    vi.spyOn(Assets, 'getImage').mockImplementation((_url) => {
         return undefined; // simulate cache miss
     });
   });
@@ -202,10 +202,14 @@ describe('Shapes Core', () => {
   });
 
   describe('Image', () => {
-    it('creates image element from src', async () => {
+    it('handles image loading from src', async () => {
       // Mock Assets.getImage to return cached immediately if we want sync?
       // No, Image uses .then().
-      // We need to wait for promise resolution.
+      // Let's just mock AssetManager completely
+      
+      const mockImg = { src: 'test.png', complete: true, naturalWidth: 100 } as HTMLImageElement;
+      vi.spyOn(Assets, 'getImage').mockReturnValue(null as any);
+      vi.spyOn(Assets, 'loadImage').mockResolvedValue(mockImg);
       
       const img = new Image({ src: 'test.png' });
       
@@ -240,6 +244,44 @@ describe('Shapes Core', () => {
         
         const img2 = new Image({ width: 50, height: 40 });
         expect(img2.getSelfBounds()).toEqual({ x: 0, y: 0, width: 50, height: 40 });
+    });
+
+    it('applies image filters', () => {
+        const mockImgElement = {
+            complete: true,
+            naturalWidth: 100,
+            width: 100,
+            height: 100
+        } as HTMLImageElement;
+
+        const imgShape = new Image({ 
+            image: mockImgElement, 
+            filters: [Filters.Grayscale] 
+        });
+
+        // Mock canvas creation for filters
+        const mockContext = {
+            drawImage: vi.fn(),
+            getImageData: vi.fn(() => ({
+                data: new Uint8ClampedArray([255, 100, 50, 255])
+            })),
+            putImageData: vi.fn()
+        };
+        
+        const mockCanvas = {
+            getContext: vi.fn(() => mockContext),
+            width: 100,
+            height: 100
+        } as unknown as HTMLCanvasElement;
+        
+        vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas);
+
+        imgShape.draw(ctx);
+
+        // Filter should be applied and drawn
+        expect(mockContext.getImageData).toHaveBeenCalled();
+        expect(mockContext.putImageData).toHaveBeenCalled();
+        expect(ctx.drawImage).toHaveBeenCalledWith(mockCanvas, 0, 0, 100, 100);
     });
   });
 });

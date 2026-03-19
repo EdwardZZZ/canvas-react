@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, HTMLAttributes, FC, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent, useImperativeHandle } from 'react';
+import React, { useRef, useEffect, useState, HTMLAttributes, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent, useImperativeHandle } from 'react';
 import { Container } from '../core/Container';
 import { SceneContext, RenderContext, RenderLoop } from './CanvasContext';
 import { InteractionEvent, Node, CanvasEvents } from '../core/Node';
@@ -32,6 +32,7 @@ export interface CanvasProps extends HTMLAttributes<HTMLCanvasElement> {
   width?: number;
   height?: number;
   debug?: boolean; // Enable DevTools
+  interactive?: boolean; // Enable pan & zoom interactions on the canvas
 }
 
 export interface CanvasRef {
@@ -44,7 +45,7 @@ export interface CanvasRef {
  * The root component of the React Canvas Engine.
  * Sets up the rendering context, scene graph root, and event listeners.
  */
-const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height = 500, debug = false, children, ...rest }, ref) => {
+const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height = 500, debug = false, interactive = false, children, ...rest }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Persistent stage instance across re-renders
   const [stage] = useState(() => new Container());
@@ -52,6 +53,10 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
   const [isDragging, setIsDragging] = useState(false);
   const [dragNode, setDragNode] = useState<Node | null>(null);
   const lastHitNodeRef = useRef<Node | null>(null);
+
+  // Interaction Manager state
+  const [isPanning, setIsPanning] = useState(false);
+  const lastPanPosRef = useRef({ x: 0, y: 0 });
   
   // Track if a redraw is needed
   const isDirtyRef = useRef(true);
@@ -239,6 +244,10 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
                hitNode.events.onDragStart(event);
            }
        }
+    } else if (interactive) {
+       // Start panning if no node is hit and interactive mode is enabled
+       setIsPanning(true);
+       lastPanPosRef.current = { x: coords.x, y: coords.y };
     }
     
     // Map touchstart to mousedown for compatibility
@@ -250,6 +259,9 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
   };
 
   const handlePointerUp = (e: ReactMouseEvent<HTMLCanvasElement> | ReactTouchEvent<HTMLCanvasElement>) => {
+    if (isPanning) {
+        setIsPanning(false);
+    }
     const coords = getEventCoordinates(e);
     if (coords) {
        const hitNode = stage.hitTest(coords);
@@ -327,6 +339,15 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
             const event = createEvent(dragNode, e, 'dragmove', coords.x, coords.y);
             dragNode.events.onDragMove(event);
         }
+    } else if (isPanning && interactive) {
+        // Handle Panning
+        const dx = coords.x - lastPanPosRef.current.x;
+        const dy = coords.y - lastPanPosRef.current.y;
+        
+        stage.x += dx;
+        stage.y += dy;
+        
+        lastPanPosRef.current = { x: coords.x, y: coords.y };
     }
 
     const lastHitNode = lastHitNodeRef.current;
@@ -392,6 +413,37 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
 
       if (hitNode) {
           dispatchEvent(hitNode, e, 'onWheel', 'wheel', coords.x, coords.y);
+      } else if (interactive) {
+          // Handle Zooming
+          e.preventDefault(); // Prevent default scrolling
+          const scaleBy = 1.05;
+          const oldScale = stage.scaleX; // Assuming uniform scaling
+
+          const pointerX = coords.x;
+          const pointerY = coords.y;
+
+          // Calculate mouse position relative to stage
+          const mousePointTo = {
+              x: (pointerX - stage.x) / oldScale,
+              y: (pointerY - stage.y) / oldScale,
+          };
+
+          const newScale = e.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+          
+          // Clamp scale to prevent zooming too far out or in
+          const clampedScale = Math.max(0.1, Math.min(newScale, 10));
+
+          stage.scaleX = clampedScale;
+          stage.scaleY = clampedScale;
+
+          // Adjust stage position to zoom towards pointer
+          const newPos = {
+              x: pointerX - mousePointTo.x * clampedScale,
+              y: pointerY - mousePointTo.y * clampedScale,
+          };
+
+          stage.x = newPos.x;
+          stage.y = newPos.y;
       }
       
       if (rest.onWheel) {

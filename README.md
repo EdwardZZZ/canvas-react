@@ -71,23 +71,25 @@ const App = () => (
 
 ### Interactions & Events
 
-The engine supports mouse and drag events on all shapes.
+The engine supports mouse and drag events on all shapes. You can also enable global canvas panning and zooming by setting `interactive={true}` on the `<Canvas>`.
 
 ```tsx
-<Rect 
-  x={100} 
-  y={100} 
-  width={50} 
-  height={50} 
-  fill="orange"
-  onClick={(e) => console.log('Clicked!', e)}
-  onMouseEnter={() => console.log('Hover enter')}
-  onMouseLeave={() => console.log('Hover leave')}
-  draggable={true}
-  onDragStart={() => console.log('Drag started')}
-  onDragMove={(e) => console.log('Dragging...', e)}
-  onDragEnd={() => console.log('Drag ended')}
-/>
+<Canvas width={800} height={600} interactive={true}>
+  <Rect 
+    x={100} 
+    y={100} 
+    width={50} 
+    height={50} 
+    fill="orange"
+    onClick={(e) => console.log('Clicked!', e)}
+    onMouseEnter={() => console.log('Hover enter')}
+    onMouseLeave={() => console.log('Hover leave')}
+    draggable={true}
+    onDragStart={() => console.log('Drag started')}
+    onDragMove={(e) => console.log('Dragging...', e)}
+    onDragEnd={() => console.log('Drag ended')}
+  />
+</Canvas>
 ```
 
 ### Grouping, Clipping & Z-Index
@@ -156,6 +158,7 @@ The root container for the scene.
 - `width`: number (default: 500)
 - `height`: number (default: 500)
 - `style`: CSSProperties
+- `interactive`: boolean (default: false) - Enable pan & zoom interactions on the canvas
 - `onClick`, `onDoubleClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseLeave`, `onWheel`: Global event handlers
 - **Methods**: `toDataURL(options)` Export canvas image
 
@@ -229,8 +232,10 @@ The root container for the scene.
 
 #### `<Image>`
 - `src`: string (image URL)
+- `image`: HTMLImageElement (pre-loaded image element)
 - `width`: number
 - `height`: number
+- `filters`: FilterFunction[] (Pixel-level filters, built-ins: `Filters.Grayscale`, `Filters.Invert`, `Filters.Sepia`, `Filters.Brightness`)
 
 #### `<Group>`
 - `clip`: boolean (enable clipping)

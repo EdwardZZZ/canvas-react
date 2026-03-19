@@ -71,23 +71,25 @@ const App = () => (
 
 ### 交互与事件
 
-引擎支持所有图形的鼠标和拖拽事件。
+引擎支持所有图形的鼠标和拖拽事件。你也可以在 `<Canvas>` 上开启 `interactive={true}` 允许全局的滚轮缩放和拖拽平移画布。
 
 ```tsx
-<Rect 
-  x={100} 
-  y={100} 
-  width={50} 
-  height={50} 
-  fill="orange"
-  onClick={(e) => console.log('点击!', e)}
-  onMouseEnter={() => console.log('鼠标移入')}
-  onMouseLeave={() => console.log('鼠标移出')}
-  draggable={true}
-  onDragStart={() => console.log('拖拽开始')}
-  onDragMove={(e) => console.log('拖拽中...', e)}
-  onDragEnd={() => console.log('拖拽结束')}
-/>
+<Canvas width={800} height={600} interactive={true}>
+  <Rect 
+    x={100} 
+    y={100} 
+    width={50} 
+    height={50} 
+    fill="orange"
+    onClick={(e) => console.log('点击!', e)}
+    onMouseEnter={() => console.log('鼠标移入')}
+    onMouseLeave={() => console.log('鼠标移出')}
+    draggable={true}
+    onDragStart={() => console.log('拖拽开始')}
+    onDragMove={(e) => console.log('拖拽中...', e)}
+    onDragEnd={() => console.log('拖拽结束')}
+  />
+</Canvas>
 ```
 
 ### 分组、裁剪与层级 (Z-Index)
@@ -156,6 +158,7 @@ const json = nodeRef.current.toJSON();
 - `width`: number (默认: 500)
 - `height`: number (默认: 500)
 - `style`: CSSProperties
+- `interactive`: boolean (默认: false) - 开启后支持鼠标拖拽画布平移和滚轮缩放
 - `onClick`, `onDoubleClick`, `onMouseDown`, `onMouseUp`, `onMouseMove`, `onMouseLeave`, `onWheel`: 全局事件处理器
 - **方法**: `toDataURL(options)` 导出画布图片
 
@@ -229,8 +232,10 @@ const json = nodeRef.current.toJSON();
 
 #### `<Image>`
 - `src`: string (图片 URL)
+- `image`: HTMLImageElement (预加载的图片对象)
 - `width`: number
 - `height`: number
+- `filters`: FilterFunction[] (像素级滤镜，内置 `Filters.Grayscale`, `Filters.Invert`, `Filters.Sepia`, `Filters.Brightness`)
 
 #### `<Group>`
 - `clip`: boolean (开启裁剪)

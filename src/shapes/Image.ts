@@ -2,6 +2,49 @@ import { Node, NodeProps } from '../core/Node';
 import { Assets } from '../core/Assets';
 
 /**
+ * Filter functions to apply to image pixel data
+ */
+export type FilterFunction = (imageData: ImageData) => void;
+
+export const Filters = {
+  Grayscale: (imageData: ImageData) => {
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const brightness = 0.34 * data[i] + 0.5 * data[i + 1] + 0.16 * data[i + 2];
+      data[i] = brightness;     // red
+      data[i + 1] = brightness; // green
+      data[i + 2] = brightness; // blue
+    }
+  },
+  Invert: (imageData: ImageData) => {
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 255 - data[i];         // red
+      data[i + 1] = 255 - data[i + 1]; // green
+      data[i + 2] = 255 - data[i + 2]; // blue
+    }
+  },
+  Sepia: (imageData: ImageData) => {
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      data[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
+      data[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
+      data[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+    }
+  },
+  Brightness: (value: number) => (imageData: ImageData) => {
+    // value between -255 and 255
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] += value;
+      data[i + 1] += value;
+      data[i + 2] += value;
+    }
+  }
+};
+
+/**
  * Properties for an Image node.
  */
 export interface ImageProps extends NodeProps {
@@ -9,6 +52,7 @@ export interface ImageProps extends NodeProps {
   src?: string; // URL string
   width?: number;
   height?: number;
+  filters?: FilterFunction[]; // Custom pixel-level filters
 }
 
 /**
@@ -18,6 +62,8 @@ export interface ImageProps extends NodeProps {
 export class Image extends Node {
   declare props: ImageProps;
   private imageObj: HTMLImageElement | null = null;
+  private filteredCanvas: HTMLCanvasElement | null = null;
+  private isDirtyFilters: boolean = true;
 
   constructor(props: ImageProps = {}) {
     super(props);
@@ -29,6 +75,10 @@ export class Image extends Node {
     if (newProps.src || newProps.image) {
         this.updateImage(this.props);
     }
+    if (newProps.filters !== undefined) {
+        this.isDirtyFilters = true;
+        this.requestRedraw();
+    }
   }
 
   /**
@@ -36,6 +86,7 @@ export class Image extends Node {
    * Uses AssetManager to load images.
    */
   private updateImage(props: ImageProps) {
+    this.isDirtyFilters = true;
     if (props.image) {
       this.imageObj = props.image;
       this.requestRedraw();
@@ -58,6 +109,45 @@ export class Image extends Node {
           });
       }
     }
+  }
+
+  private applyFilters() {
+    if (!this.imageObj || !this.imageObj.complete || this.imageObj.naturalWidth === 0) return;
+    
+    if (!this.props.filters || this.props.filters.length === 0) {
+      this.filteredCanvas = null;
+      this.isDirtyFilters = false;
+      return;
+    }
+
+    if (!this.filteredCanvas) {
+      this.filteredCanvas = document.createElement('canvas');
+    }
+
+    const canvas = this.filteredCanvas;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    canvas.width = this.imageObj.width;
+    canvas.height = this.imageObj.height;
+
+    // Draw original image
+    ctx.drawImage(this.imageObj, 0, 0);
+
+    try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Apply all filters sequentially
+        this.props.filters.forEach(filter => filter(imageData));
+        
+        ctx.putImageData(imageData, 0, 0);
+    } catch (e) {
+        // May fail due to CORS if image is not loaded with crossOrigin="anonymous"
+        console.warn('Canvas filter failed (likely CORS issue):', e);
+        this.filteredCanvas = null; // fallback to original
+    }
+
+    this.isDirtyFilters = false;
   }
 
   getSelfBounds() {
@@ -85,7 +175,13 @@ export class Image extends Node {
     if (this.imageObj && this.imageObj.complete && this.imageObj.naturalWidth > 0) {
       const w = width || this.imageObj.width;
       const h = height || this.imageObj.height;
-      ctx.drawImage(this.imageObj, 0, 0, w, h);
+
+      if (this.isDirtyFilters) {
+        this.applyFilters();
+      }
+
+      const sourceToDraw = this.filteredCanvas || this.imageObj;
+      ctx.drawImage(sourceToDraw, 0, 0, w, h);
     }
   }
 }
