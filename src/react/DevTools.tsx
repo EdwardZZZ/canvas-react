@@ -15,11 +15,11 @@ const styles = {
     color: '#e0e0e0',
     fontFamily: 'monospace',
     fontSize: '12px',
-    overflowY: 'auto' as const,
     borderLeft: '1px solid #444',
     zIndex: 9999,
     display: 'flex',
     flexDirection: 'column' as const,
+    boxShadow: '-2px 0 10px rgba(0,0,0,0.3)',
   },
   header: {
     padding: '10px',
@@ -29,6 +29,8 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    cursor: 'grab',
+    userSelect: 'none' as const,
   },
   treeContainer: {
     flex: 1,
@@ -144,6 +146,11 @@ export const DevTools: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [highlightRect, setHighlightRect] = useState<React.CSSProperties | null>(null);
 
+  // Dragging state
+  const [isPanelDragging, setIsPanelDragging] = useState(false);
+  const [panelPos, setPanelPos] = useState({ x: 0, y: 0 }); // Offset from right:0, top:0
+  const dragStartRef = React.useRef({ x: 0, y: 0, startPanelX: 0, startPanelY: 0 });
+
   // Poll for scene graph changes
   useEffect(() => {
     const interval = setInterval(() => {
@@ -174,6 +181,34 @@ export const DevTools: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
     }
   }, [selectedNode, updateCount]);
 
+  // Handle panel dragging
+  useEffect(() => {
+    if (!isPanelDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        
+        // Update position (x is offset from right, so subtract dx)
+        setPanelPos({
+            x: dragStartRef.current.startPanelX - dx,
+            y: dragStartRef.current.startPanelY + dy
+        });
+    };
+
+    const handleMouseUp = () => {
+        setIsPanelDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isPanelDragging]);
+
   if (!stage) return null;
 
   return (
@@ -184,13 +219,33 @@ export const DevTools: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       )}
 
       {/* DevTools Panel */}
-      <div style={styles.container}>
-        <div style={styles.header}>
+      <div 
+        style={{
+            ...styles.container,
+            right: `${panelPos.x}px`,
+            top: `${panelPos.y}px`
+        }}
+      >
+        <div 
+            style={styles.header}
+            onMouseDown={(e) => {
+                setIsPanelDragging(true);
+                dragStartRef.current = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    startPanelX: panelPos.x,
+                    startPanelY: panelPos.y
+                };
+            }}
+        >
           <span>Scene Graph</span>
           {onClose && (
             <button 
-              onClick={onClose}
-              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '0 5px' }}
             >
               ✕
             </button>
