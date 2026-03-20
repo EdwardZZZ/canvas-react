@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { useFrame, RenderContext } from './CanvasContext';
+import { useFrame, RenderContext } from '../../react/CanvasContext';
 import React from 'react';
 
 describe('useFrame Hook', () => {

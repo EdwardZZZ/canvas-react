@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Rect as EngineRect } from '../shapes/Rect';
-import { Container } from '../core/Container';
+import { Rect as EngineRect } from '../../shapes/Rect';
+import { Container } from '../../core/Container';
 
 describe('Z-Index Support', () => {
   it('renders children in z-index order', () => {

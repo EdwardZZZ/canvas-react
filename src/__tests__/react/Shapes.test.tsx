@@ -1,7 +1,8 @@
+import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Rect, Circle, Text, Group, Image, Line } from './Shapes';
-import Canvas from './Canvas';
+import { Rect, Circle, Text, Group, Image, Line } from '../../react/Shapes';
+import Canvas from '../../react/Canvas';
 
 // Using real implementation for integration testing
 // This ensures that the components correctly instantiate the engine nodes

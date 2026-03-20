@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect } from 'react';
 import { Container } from '../core/Container';
 
 export interface RenderLoop {
-  add: (callback: (time: number) => void) => void;
-  remove: (callback: (time: number) => void) => void;
+  add: (callback: (time: number, dt: number) => void) => void;
+  remove: (callback: (time: number, dt: number) => void) => void;
   run: (time: number) => void;
 }
 
@@ -18,7 +18,7 @@ export const useCanvasParent = () => {
   return parent;
 };
 
-export const useFrame = (callback: (time: number) => void) => {
+export const useFrame = (callback: (time: number, dt: number) => void) => {
   const renderLoop = useContext(RenderContext);
   
   useEffect(() => {

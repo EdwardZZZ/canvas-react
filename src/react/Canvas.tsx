@@ -9,22 +9,25 @@ import { DevTools } from './DevTools';
  * Manages a set of callbacks to be executed on every frame.
  */
 class DefaultRenderLoop implements RenderLoop {
-  private callbacks: Set<(time: number) => void>;
+  private callbacks: Set<(time: number, dt: number) => void>;
+  private lastTime: number = 0;
 
   constructor() {
     this.callbacks = new Set();
   }
 
-  add(callback: (time: number) => void) {
+  add(callback: (time: number, dt: number) => void) {
     this.callbacks.add(callback);
   }
 
-  remove(callback: (time: number) => void) {
+  remove(callback: (time: number, dt: number) => void) {
     this.callbacks.delete(callback);
   }
 
   run(time: number) {
-    this.callbacks.forEach(cb => cb(time));
+    const dt = this.lastTime === 0 ? 0 : time - this.lastTime;
+    this.lastTime = time;
+    this.callbacks.forEach(cb => cb(time, dt));
   }
 }
 

@@ -14,26 +14,38 @@ export class Path extends Node {
   declare props: PathProps;
 
   getSelfBounds() {
-    // Calculating exact bounds for arbitrary SVG path is hard without browser API.
-    // However, since we use Path2D, we don't have easy access to bounds.
-    // A robust engine would parse the SVG path data manually to compute bounds.
-    // For this lightweight engine, we might skip AABB check for Paths, or return a large box?
-    // Or we rely on user providing width/height?
-    
-    // Better approach: Parse "M x y" etc commands minimally to get rough bounds.
-    // This is complex. Let's return a "Infinite" or skip bounds check by returning null?
-    // Node.getSelfBounds returns 0,0,0,0 by default which effectively makes hitTest fail 
-    // if we strictly check AABB (and AABB size > 0).
-    
-    // Let's implement a very simple parser for M/L/H/V commands to guess bounds.
-    // Or just return a "safe" box if user provides width/height props (even if not used for drawing).
-    
-    // Fallback: If we can't compute, we should return a box that covers everything or disable AABB check for this node.
-    // To disable AABB check, we can make getGlobalBounds return a special value or just handle it in hitTest.
-    
-    // Hack for now: Return a huge box so AABB check passes, relying on isPointInPath.
-    // This degrades performance to previous level for Paths, but keeps correctness.
-    
+    // A simplified bounding box calculation for paths.
+    // For a robust implementation, you need a full SVG path parser to compute exact bounds.
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    if (this.props.data) {
+        const commands = this.props.data.match(/[a-zA-Z][^a-zA-Z]*/g);
+        if (commands) {
+            for (const cmd of commands) {
+                const yMatch = cmd.match(/[\d.-]+/g);
+                if (yMatch) {
+                    for (let i = 0; i < yMatch.length; i += 2) {
+                        const x = parseFloat(yMatch[i]);
+                        const y = parseFloat(yMatch[i+1]);
+                        if (!isNaN(x) && !isNaN(y)) {
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (minX !== Infinity) {
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+
     return { x: -10000, y: -10000, width: 20000, height: 20000 };
   }
 

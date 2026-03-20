@@ -1,7 +1,8 @@
+import '@testing-library/jest-dom';
 import { render, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Canvas from './Canvas';
-import { Rect, Group } from './Shapes';
+import Canvas from '../../react/Canvas';
+import { Rect, Group } from '../../react/Shapes';
 
 describe('Interaction System', () => {
   beforeEach(() => {

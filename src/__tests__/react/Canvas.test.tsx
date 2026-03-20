@@ -1,6 +1,7 @@
+import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Canvas from './Canvas';
+import Canvas from '../../react/Canvas';
 
 describe('Canvas Component', () => {
   beforeEach(() => {

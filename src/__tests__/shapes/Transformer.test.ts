@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Transformer } from './Transformer';
-import { Node } from '../core/Node';
+import { Transformer } from '../../shapes/Transformer';
+import { Node } from '../../core/Node';
 
 describe('Transformer', () => {
     let target: Node;

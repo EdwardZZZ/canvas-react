@@ -31,6 +31,6 @@
     "types": ["@testing-library/jest-dom"]
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "setupTests.ts", "examples"],
+  "exclude": ["src/**/__tests__/*", "setupTests.ts", "examples"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

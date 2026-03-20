@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Node, Rect } from './Node';
-import { Container } from './Container';
+import { Node, Rect } from '../../core/Node';
+import { Container } from '../../core/Container';
 
 describe('Frustum Culling', () => {
     const getMockCtx = () => ({

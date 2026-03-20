@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Circle } from './Circle';
-import { Ellipse } from './Ellipse';
-import { RegularPolygon } from './RegularPolygon';
-import { Star } from './Star';
-import { Arc } from './Arc';
-import { Text } from './Text';
-import { Line } from './Line';
-import { Image, Filters } from './Image';
-import { Path } from './Path';
-import { Assets } from '../core/Assets';
+import { Rect } from '../../shapes/Rect';
+import { Circle } from '../../shapes/Circle';
+import { Ellipse } from '../../shapes/Ellipse';
+import { RegularPolygon } from '../../shapes/RegularPolygon';
+import { Star } from '../../shapes/Star';
+import { Arc } from '../../shapes/Arc';
+import { Text } from '../../shapes/Text';
+import { Line } from '../../shapes/Line';
+import { Image, Filters } from '../../shapes/Image';
+import { Path } from '../../shapes/Path';
+import { Assets } from '../../core/Assets';
 
 describe('Shapes Core', () => {
   let ctx: CanvasRenderingContext2D;
@@ -25,6 +26,13 @@ describe('Shapes Core', () => {
       lineTo: vi.fn(),
       stroke: vi.fn(),
       drawImage: vi.fn(),
+      rect: vi.fn(),
+      roundRect: vi.fn(),
+      measureText: vi.fn(() => ({ width: 50 })),
+      save: vi.fn(),
+      restore: vi.fn(),
+      transform: vi.fn(),
+      clip: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
     
     // Mock Assets.loadImage
@@ -41,6 +49,20 @@ describe('Shapes Core', () => {
   
   // ... rest of describe blocks ...
   
+  describe('Rect', () => {
+    it('renders with props', () => {
+      const rect = new Rect({ width: 100, height: 50, cornerRadius: 10 });
+      rect.draw(ctx);
+      expect(ctx.roundRect).toHaveBeenCalledWith(0, 0, 100, 50, 10);
+    });
+
+    it('calculates bounds correctly', () => {
+        const shape = new Rect({ width: 100, height: 50 });
+        const bounds = shape.getSelfBounds();
+        expect(bounds).toEqual({ x: 0, y: 0, width: 100, height: 50 });
+    });
+  });
+
   describe('Circle', () => {
     it('draws a circle with correct properties', () => {
       const circle = new Circle({ radius: 20, fill: 'blue' });
@@ -53,9 +75,10 @@ describe('Shapes Core', () => {
       expect(ctx.closePath).toHaveBeenCalled();
     });
 
-    it('calculates self bounds correctly', () => {
-        const circle = new Circle({ radius: 10 });
-        expect(circle.getSelfBounds()).toEqual({ x: -10, y: -10, width: 20, height: 20 });
+    it('calculates bounds correctly', () => {
+        const shape = new Circle({ radius: 20 });
+        const bounds = shape.getSelfBounds();
+        expect(bounds).toEqual({ x: -20, y: -20, width: 40, height: 40 });
     });
   });
 
@@ -65,6 +88,12 @@ describe('Shapes Core', () => {
       ellipse.draw(ctx);
       expect(ctx.ellipse).toHaveBeenCalledWith(0, 0, 20, 10, 0, 0, Math.PI * 2);
       expect(ctx.fillStyle).toBe('red');
+    });
+
+    it('calculates bounds correctly', () => {
+        const shape = new Ellipse({ radiusX: 40, radiusY: 20 });
+        const bounds = shape.getSelfBounds();
+        expect(bounds).toEqual({ x: -40, y: -20, width: 80, height: 40 });
     });
   });
 
@@ -76,6 +105,12 @@ describe('Shapes Core', () => {
       expect(ctx.lineTo).toHaveBeenCalled();
       expect(ctx.fill).toHaveBeenCalled();
     });
+
+    it('calculates bounds correctly', () => {
+        const shape = new RegularPolygon({ sides: 6, radius: 30 });
+        const bounds = shape.getSelfBounds();
+        expect(bounds).toEqual({ x: -30, y: -30, width: 60, height: 60 });
+    });
   });
 
   describe('Star', () => {
@@ -86,25 +121,61 @@ describe('Shapes Core', () => {
       expect(ctx.lineTo).toHaveBeenCalled();
       expect(ctx.fill).toHaveBeenCalled();
     });
+
+    it('calculates bounds correctly', () => {
+        const shape = new Star({ numPoints: 5, innerRadius: 15, outerRadius: 30 });
+        const bounds = shape.getSelfBounds();
+        expect(bounds).toEqual({ x: -30, y: -30, width: 60, height: 60 });
+    });
   });
 
   describe('Arc', () => {
     it('draws an arc', () => {
       const arc = new Arc({ innerRadius: 10, outerRadius: 20, angle: Math.PI, fill: 'blue' });
       arc.draw(ctx);
+      expect(ctx.beginPath).toHaveBeenCalled();
       expect(ctx.arc).toHaveBeenCalledTimes(2);
       expect(ctx.fill).toHaveBeenCalled();
+    });
+
+    it('calculates bounds correctly', () => {
+        const shape = new Arc({ innerRadius: 10, outerRadius: 30, angle: Math.PI });
+        const bounds = shape.getSelfBounds();
+        expect(bounds).toEqual({ x: -30, y: -30, width: 60, height: 60 });
     });
   });
 
   describe('Text', () => {
     it('draws text with correct properties', () => {
-      const text = new Text({ text: 'Hello', fontSize: 24, fill: 'red' });
+      const text = new Text({ text: 'Hello', x: 10, y: 20, fontSize: 24, fill: 'blue' });
       text.draw(ctx);
       
       expect(ctx.font).toBe('normal normal normal 24px Arial');
-      expect(ctx.fillStyle).toBe('red');
+      expect(ctx.fillStyle).toBe('blue');
       expect(ctx.fillText).toHaveBeenCalledWith('Hello', 0, 0);
+    });
+
+    it('handles multiline text', () => {
+        const text = new Text({ text: 'Line1\nLine2', lineHeight: 1.5, fontSize: 20 });
+        text.draw(ctx);
+        // Line1 at y=0, Line2 at y=30 (20 * 1.5)
+        expect(ctx.fillText).toHaveBeenCalledWith('Line1', 0, 0);
+        expect(ctx.fillText).toHaveBeenCalledWith('Line2', 0, 30);
+    });
+    
+    it('calculates bounds correctly', () => {
+        // Mock measureContext for this test
+        const originalContext = (Text as any).measureContext;
+        (Text as any).measureContext = {
+            measureText: vi.fn(() => ({ width: 50 }))
+        } as any;
+
+        const shape = new Text({ text: 'Test', fontSize: 16, lineHeight: 1 });
+        const bounds = shape.getSelfBounds();
+        expect(bounds).toEqual({ x: 0, y: 0, width: 50, height: 16 });
+
+        // Restore context
+        (Text as any).measureContext = originalContext;
     });
 
     it('wraps text when width is set', () => {
@@ -153,21 +224,31 @@ describe('Shapes Core', () => {
   });
 
   describe('Line', () => {
-    it('draws a line with points', () => {
-      const line = new Line({ 
-        points: [0, 0, 10, 10, 20, 0], 
-        stroke: 'green',
-        lineWidth: 2 
-      });
+    it('draws a line with correct properties', () => {
+      const line = new Line({ points: [0, 0, 10, 10, 20, 0], stroke: 'green', lineWidth: 2, closed: true });
       line.draw(ctx);
       
       expect(ctx.beginPath).toHaveBeenCalled();
       expect(ctx.moveTo).toHaveBeenCalledWith(0, 0);
       expect(ctx.lineTo).toHaveBeenCalledWith(10, 10);
       expect(ctx.lineTo).toHaveBeenCalledWith(20, 0);
+      expect(ctx.closePath).toHaveBeenCalled();
       expect(ctx.strokeStyle).toBe('green');
       expect(ctx.lineWidth).toBe(2);
       expect(ctx.stroke).toHaveBeenCalled();
+    });
+
+    it('calculates bounds from points', () => {
+        const shape = new Line({ points: [10, 20, 30, 40, 5, 50], lineWidth: 1 }); // Ensure lineWidth is 1 for exact bounds
+        const bounds = shape.getSelfBounds();
+        // minX: 5, maxX: 30, minY: 20, maxY: 50. Padding is lineWidth/2 = 0.5
+        // Actual bounds should be x: 4.5, y: 19.5, width: 26, height: 31
+        expect(bounds).toEqual({ x: 4.5, y: 19.5, width: 26, height: 31 });
+    });
+    
+    it('handles empty points for bounds', () => {
+        const shape = new Line({ points: [] });
+        expect(shape.getSelfBounds()).toEqual({ x: 0, y: 0, width: 0, height: 0 });
     });
 
     it('closes the path if closed prop is true', () => {
@@ -199,6 +280,16 @@ describe('Shapes Core', () => {
           
           vi.unstubAllGlobals();
       });
+
+    it('calculates bounds from data', () => {
+        const path = new Path({ data: 'M 10 10 L 20 20 L 5 15 Z' });
+        const bounds = path.getSelfBounds();
+        // minX: 5, maxX: 20, minY: 10, maxY: 20
+        expect(bounds).toEqual({ x: 5, y: 10, width: 15, height: 10 });
+        
+        const pathFallback = new Path();
+        expect(pathFallback.getSelfBounds()).toEqual({ x: -10000, y: -10000, width: 20000, height: 20000 });
+    });
   });
 
   describe('Image', () => {

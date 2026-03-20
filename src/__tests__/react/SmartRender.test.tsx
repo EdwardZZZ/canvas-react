@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Canvas from './Canvas';
-import { Rect } from './Shapes';
+import Canvas from '../../react/Canvas';
+import { Rect } from '../../react/Shapes';
 
 describe('Smart Rendering (Dirty Check)', () => {
   beforeEach(() => {
