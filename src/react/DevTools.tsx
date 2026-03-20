@@ -173,7 +173,7 @@ export const DevTools: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                 width: bounds.width,
                 height: bounds.height
             });
-        } catch (_e) {
+        } catch {
             setHighlightRect(null);
         }
     } else {
