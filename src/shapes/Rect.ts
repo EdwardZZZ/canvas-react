@@ -57,6 +57,19 @@ export class Rect extends Node {
     return { x: 0, y: 0, width, height };
   }
 
+  protected _generateSVGTags(): string {
+    const { width = 100, height = 100, fill, stroke, lineWidth, cornerRadius } = this.props;
+    let attrs = `x="0" y="0" width="${width}" height="${height}" `;
+    if (cornerRadius) {
+        attrs += `rx="${cornerRadius}" ry="${cornerRadius}" `;
+    }
+    if (fill) attrs += `fill="${fill}" `;
+    if (stroke) attrs += `stroke="${stroke}" `;
+    if (lineWidth) attrs += `stroke-width="${lineWidth}" `;
+    
+    return `<rect ${attrs} transform="${this._getSVGTransform()}" ${this._getSVGStyle()} />`;
+  }
+
   /**
    * Checks if a point is inside the rectangle.
    */

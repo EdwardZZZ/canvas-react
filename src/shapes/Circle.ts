@@ -60,4 +60,14 @@ export class Circle extends Node {
     const { radius = 50 } = this.props;
     return x * x + y * y <= radius * radius;
   }
+
+  protected _generateSVGTags(): string {
+    const { radius = 50, fill, stroke, lineWidth } = this.props;
+    let attrs = `cx="0" cy="0" r="${radius}" `;
+    if (fill) attrs += `fill="${fill}" `;
+    if (stroke) attrs += `stroke="${stroke}" `;
+    if (lineWidth) attrs += `stroke-width="${lineWidth}" `;
+    
+    return `<circle ${attrs} transform="${this._getSVGTransform()}" ${this._getSVGStyle()} />`;
+  }
 }

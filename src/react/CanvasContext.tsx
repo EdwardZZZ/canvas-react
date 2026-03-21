@@ -5,10 +5,14 @@ export interface RenderLoop {
   add: (callback: (time: number, dt: number) => void) => void;
   remove: (callback: (time: number, dt: number) => void) => void;
   run: (time: number) => void;
+  registerLayer: (id: string, canvas: HTMLCanvasElement) => void;
+  unregisterLayer: (id: string) => void;
+  getLayers: () => Map<string, HTMLCanvasElement>;
 }
 
 export const SceneContext = createContext<Container | null>(null);
 export const RenderContext = createContext<RenderLoop | null>(null);
+export const LayerContext = createContext<HTMLCanvasElement | null>(null);
 
 export const useCanvasParent = () => {
   const parent = useContext(SceneContext);

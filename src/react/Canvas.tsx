@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, HTMLAttributes, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent, useImperativeHandle } from 'react';
 import { Container } from '../core/Container';
-import { SceneContext, RenderContext, RenderLoop } from './CanvasContext';
+import { SceneContext, RenderContext, RenderLoop, LayerContext } from './CanvasContext';
 import { InteractionEvent, Node, CanvasEvents } from '../core/Node';
 import { DevTools } from './DevTools';
 
@@ -11,6 +11,7 @@ import { DevTools } from './DevTools';
 class DefaultRenderLoop implements RenderLoop {
   private callbacks: Set<(time: number, dt: number) => void>;
   private lastTime: number = 0;
+  private layers: Map<string, HTMLCanvasElement> = new Map();
 
   constructor() {
     this.callbacks = new Set();
@@ -28,6 +29,18 @@ class DefaultRenderLoop implements RenderLoop {
     const dt = this.lastTime === 0 ? 0 : time - this.lastTime;
     this.lastTime = time;
     this.callbacks.forEach(cb => cb(time, dt));
+  }
+  
+  registerLayer(id: string, canvas: HTMLCanvasElement) {
+      this.layers.set(id, canvas);
+  }
+  
+  unregisterLayer(id: string) {
+      this.layers.delete(id);
+  }
+  
+  getLayers() {
+      return this.layers;
   }
 }
 
@@ -63,6 +76,17 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
   
   // Track if a redraw is needed
   const isDirtyRef = useRef(true);
+
+  // We need to manage multiple canvas layers if Layer component is used.
+  // For simplicity, we can let Canvas manage a default layer, and Layer components can register their own canvases.
+  // However, hit testing needs to happen top-down across all layers.
+  // A true Layer system in React would involve portals or ref management.
+  // To implement this properly within the current architecture:
+  // The Canvas component acts as the main stage. 
+  // We can change the render loop to render children that are Layers into their respective canvases.
+  
+  // Actually, a simpler approach: Layer component renders a <canvas> absolutely positioned over the main canvas.
+  // But events need to be captured by a single top-level overlay to ensure proper bubbling and prevent overlapping issues.
 
   useImperativeHandle(ref, () => ({
     stage,
@@ -125,7 +149,17 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
       renderLoop.run(time);
 
       if (isDirtyRef.current) {
+          // Clear and render main canvas
           context.clearRect(0, 0, width, height);
+          
+          // Clear secondary layers
+          const layers = renderLoop.getLayers();
+          layers.forEach((layerCanvas) => {
+              const layerCtx = layerCanvas.getContext('2d');
+              if (layerCtx) {
+                  layerCtx.clearRect(0, 0, width, height);
+              }
+          });
           
           // Update animations (if we add time-based updates to nodes)
           stage.update(time);
@@ -469,25 +503,27 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
   return (
     <RenderContext.Provider value={renderLoop}>
       <SceneContext.Provider value={stage}>
-        <div style={{ position: 'relative', width, height }}>
-            <canvas 
-              ref={canvasRef} 
-              onClick={handleClick}
-              onDoubleClick={handleDoubleClick}
-              onMouseDown={handlePointerDown}
-              onMouseUp={handlePointerUp}
-              onMouseMove={handlePointerMove}
-              onMouseLeave={handleMouseLeave}
-              onWheel={handleWheel}
-              onTouchStart={handlePointerDown}
-              onTouchMove={handlePointerMove}
-              onTouchEnd={handlePointerUp}
-              onTouchCancel={handlePointerUp}
-              {...rest} 
-            />
-            {debug && <DevTools />}
-        </div>
-        {children}
+        <LayerContext.Provider value={canvasRef.current}>
+          <div style={{ position: 'relative', width, height }}>
+              <canvas 
+                ref={canvasRef} 
+                onClick={handleClick}
+                onDoubleClick={handleDoubleClick}
+                onMouseDown={handlePointerDown}
+                onMouseUp={handlePointerUp}
+                onMouseMove={handlePointerMove}
+                onMouseLeave={handleMouseLeave}
+                onWheel={handleWheel}
+                onTouchStart={handlePointerDown}
+                onTouchMove={handlePointerMove}
+                onTouchEnd={handlePointerUp}
+                onTouchCancel={handlePointerUp}
+                {...rest} 
+              />
+              {debug && <DevTools />}
+              {children}
+          </div>
+        </LayerContext.Provider>
       </SceneContext.Provider>
     </RenderContext.Provider>
   );

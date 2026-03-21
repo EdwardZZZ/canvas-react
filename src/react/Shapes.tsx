@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, PropsWithChildren } from 'react';
-import { useCanvasParent, SceneContext } from './CanvasContext';
+import React, { useEffect, useRef, useState, PropsWithChildren } from 'react';
+import { useCanvasParent, SceneContext, RenderContext, LayerContext } from './CanvasContext';
 import { Container } from '../core/Container';
 import { Rect as EngineRect } from '../shapes/Rect';
 import { Circle as EngineCircle } from '../shapes/Circle';
@@ -133,3 +133,118 @@ export const Group = React.forwardRef<Container, GroupProps>(({ children, ...pro
 });
 
 Group.displayName = 'Group';
+
+export interface LayerProps extends NodeProps, PropsWithChildren {
+    width?: number;
+    height?: number;
+}
+
+export const Layer = React.forwardRef<Container, LayerProps>(({ children, width: _width, height: _height, ...props }, ref) => {
+    const parent = useCanvasParent();
+    const renderLoop = React.useContext(RenderContext);
+    const nodeRef = useRef<Container | null>(null);
+    const layerIdRef = useRef(`layer_${Math.random().toString(36).substring(2, 9)}`);
+    const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
+    
+    if (!nodeRef.current) {
+        nodeRef.current = new Container(props);
+    }
+    
+    React.useImperativeHandle(ref, () => nodeRef.current as Container);
+    
+    // Manage Canvas Element creation and registration
+    useEffect(() => {
+        const currentId = layerIdRef.current;
+        // We create a canvas element dynamically and append it to the main container
+        const canvas = document.createElement('canvas');
+        canvas.style.position = 'absolute';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.pointerEvents = 'none'; // Events should be handled by main canvas
+        canvas.style.backgroundColor = 'transparent';
+        
+        // We don't need parent.getStage anymore because LayerPortal handles insertion via LayerContext
+        
+        setCanvasEl(canvas);
+        
+        if (renderLoop) {
+            renderLoop.registerLayer(currentId, canvas);
+        }
+        
+        return () => {
+            if (renderLoop) {
+                renderLoop.unregisterLayer(currentId);
+            }
+        };
+    }, [renderLoop]);
+    
+    // Set layer context
+    useEffect(() => {
+        if (canvasEl && nodeRef.current) {
+            const ctx = canvasEl.getContext('2d');
+            if (ctx) {
+                // Attach the context to the container so it draws here instead of main canvas
+                (nodeRef.current as any)._layerCtx = ctx;
+            }
+        }
+    }, [canvasEl]);
+    
+    // Handle scene graph lifecycle
+    useEffect(() => {
+        const node = nodeRef.current;
+        if (!node) return;
+        parent.add(node);
+        return () => parent.remove(node);
+    }, [parent]);
+    
+    useEffect(() => {
+        nodeRef.current?.setProps(props);
+    }, [props]);
+    
+    return (
+        <SceneContext.Provider value={nodeRef.current}>
+            {canvasEl && <LayerPortal canvas={canvasEl} />}
+            {children}
+        </SceneContext.Provider>
+    );
+});
+
+// A helper to inject the layer canvas into the DOM near the main canvas
+const LayerPortal: React.FC<{ canvas: HTMLCanvasElement }> = ({ canvas }) => {
+    const layerContext = React.useContext(LayerContext);
+    
+    useEffect(() => {
+        if (layerContext && layerContext.parentElement) {
+            layerContext.parentElement.insertBefore(canvas, layerContext.nextSibling);
+            
+            // Sync dimensions
+            const syncSize = () => {
+                canvas.width = layerContext.width;
+                canvas.height = layerContext.height;
+                canvas.style.width = layerContext.style.width;
+                canvas.style.height = layerContext.style.height;
+                
+                // Copy transform (scale for high DPI)
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    const ratio = window.devicePixelRatio || 1;
+                    ctx.resetTransform();
+                    ctx.scale(ratio, ratio);
+                }
+            };
+            
+            syncSize();
+            
+            // Listen for resize? For now just sync once
+            return () => {
+                if (canvas.parentElement) {
+                    canvas.parentElement.removeChild(canvas);
+                }
+            };
+        }
+    }, [canvas, layerContext]);
+    
+    return null;
+};
+
+Layer.displayName = 'Layer';

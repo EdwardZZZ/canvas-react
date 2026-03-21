@@ -293,20 +293,18 @@ export class Node {
    * @param viewport Optional viewport rect for frustum culling.
    */
   render(ctx: CanvasRenderingContext2D, viewport?: Rect) {
-    // Frustum Culling
+        if (this.props.visible === false) return;
+
+        // Skip rendering if not in viewport (culling)
     if (viewport) {
         const bounds = this.getGlobalBounds();
-        // If node has size (not invisible) and is outside viewport, skip
-        if (bounds.width > 0 && bounds.height > 0) {
-            const isOutside = 
-                bounds.x > viewport.x + viewport.width ||
-                bounds.x + bounds.width < viewport.x ||
-                bounds.y > viewport.y + viewport.height ||
-                bounds.y + bounds.height < viewport.y;
-            
-            if (isOutside) {
-                return;
-            }
+        if (
+            bounds.x > viewport.x + viewport.width ||
+            bounds.x + bounds.width < viewport.x ||
+            bounds.y > viewport.y + viewport.height ||
+            bounds.y + bounds.height < viewport.y
+        ) {
+            return;
         }
     }
 
@@ -377,9 +375,6 @@ export class Node {
     return json;
   }
 
-  /**
-   * Exports the node and its children to a Data URL (Image).
-   */
   toDataURL(options: { mimeType?: string, quality?: number, pixelRatio?: number, x?: number, y?: number, width?: number, height?: number } = {}): string {
     const { mimeType = 'image/png', quality = 1, pixelRatio = 1 } = options;
     let { x = 0, y = 0, width, height } = options;
@@ -403,6 +398,34 @@ export class Node {
     this.render(ctx);
 
     return canvas.toDataURL(mimeType, quality);
+  }
+
+  toSVG(): string {
+    const bounds = this.getGlobalBounds();
+    const width = bounds.width > 0 ? bounds.width : 500;
+    const height = bounds.height > 0 ? bounds.height : 500;
+    
+    let svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n`;
+    svgStr += this._generateSVGTags();
+    svgStr += `</svg>`;
+    return svgStr;
+  }
+
+  protected _getSVGTransform(): string {
+    const m = this.getTransform();
+    // SVG transform matrix is a b c d e f
+    return `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`;
+  }
+
+  protected _getSVGStyle(): string {
+    let style = '';
+    if (this.props.opacity !== undefined) style += `opacity="${this.props.opacity}" `;
+    // Common fill/stroke are usually in specific shapes, but we can put basics here if needed
+    return style.trim();
+  }
+
+  protected _generateSVGTags(): string {
+    return `<g transform="${this._getSVGTransform()}" ${this._getSVGStyle()}></g>`;
   }
 
   /**

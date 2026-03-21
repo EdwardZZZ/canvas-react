@@ -81,6 +81,30 @@ export class Tween {
     this.animationFrameId = requestAnimationFrame(tick);
   }
 
+  /**
+   * Internal method used by Timeline to scrub the tween
+   */
+  _updateFromTimeline(timeMs: number) {
+      if (!this.config.node || !this.startProps) return;
+
+      const elapsed = timeMs / 1000;
+      const progress = Math.min(1, elapsed / this.config.duration!);
+      const easedProgress = this.config.easing!(progress);
+
+      const currentProps: any = {};
+      for (const key in this.deltaProps) {
+        const startValue = this.startProps[key];
+        const delta = this.deltaProps[key];
+        currentProps[key] = startValue + delta * easedProgress;
+      }
+
+      this.config.node.setProps(currentProps);
+
+      if (this.config.onUpdate) {
+        this.config.onUpdate();
+      }
+  }
+
   pause() {
     this.isRunning = false;
     cancelAnimationFrame(this.animationFrameId);

@@ -120,13 +120,16 @@ export class Container extends Node {
    * Handles clipping if enabled in props.
    */
   draw(ctx: CanvasRenderingContext2D, viewport?: Rect) {
+    // If there's a custom render context (e.g. from Layer), use it
+    const renderCtx = (this as any)._layerCtx || ctx;
+
     if (this.props.clip) {
-        ctx.beginPath();
+        renderCtx.beginPath();
         const { clipX = 0, clipY = 0, clipWidth = 100, clipHeight = 100 } = this.props;
-        ctx.rect(clipX, clipY, clipWidth, clipHeight);
-        ctx.clip();
+        renderCtx.rect(clipX, clipY, clipWidth, clipHeight);
+        renderCtx.clip();
     }
-    this.children.forEach(child => child.render(ctx, viewport));
+    this.children.forEach(child => child.render(renderCtx, viewport));
   }
 
   update(deltaTime: number) {
@@ -169,5 +172,22 @@ export class Container extends Node {
       }
     }
     return null;
+  }
+
+  protected _generateSVGTags(): string {
+    let svg = `<g transform="${this._getSVGTransform()}" ${this._getSVGStyle()}>`;
+    
+    // Simplistic clip path support for SVG could go here
+    if (this.props.clip) {
+       // Note: Proper SVG clipping requires defining <clipPath> in <defs> with an ID.
+       // This is a simplified placeholder.
+    }
+
+    for (const child of this.children) {
+      svg += (child as any)['_generateSVGTags'](); // Access protected method
+    }
+
+    svg += `</g>`;
+    return svg;
   }
 }

@@ -182,5 +182,38 @@ export class Text extends Node {
              y >= bounds.y && y <= bounds.y + bounds.height;
   }
 
+  protected _generateSVGTags(): string {
+    const { text = '', fill, fontSize = 16, fontFamily = 'Arial', fontStyle = 'normal', fontWeight = 'normal', align = 'left', verticalAlign = 'top', lineHeight = 1.2 } = this.props;
+    
+    // Simplistic text export.
+    let attrs = `x="0" y="0" font-family="${fontFamily}" font-size="${fontSize}px" `;
+    if (fill) attrs += `fill="${fill}" `;
+    if (fontWeight !== 'normal') attrs += `font-weight="${fontWeight}" `;
+    if (fontStyle !== 'normal') attrs += `font-style="${fontStyle}" `;
+    
+    // Map canvas align to SVG text-anchor
+    let textAnchor = 'start';
+    if (align === 'center') textAnchor = 'middle';
+    if (align === 'right') textAnchor = 'end';
+    attrs += `text-anchor="${textAnchor}" `;
+    
+    // Map canvas baseline to SVG dominant-baseline
+    let dominantBaseline = 'hanging'; // default for top
+    if (verticalAlign === 'middle') dominantBaseline = 'middle';
+    if (verticalAlign === 'bottom') dominantBaseline = 'auto'; // approximate
+    attrs += `dominant-baseline="${dominantBaseline}" `;
+    
+    // Handle multiline via tspan
+    const lines = text.split('\n');
+    const lh = fontSize * lineHeight;
+    let content = '';
+    
+    lines.forEach((line, i) => {
+        content += `<tspan x="0" dy="${i === 0 ? 0 : lh}">${line}</tspan>`;
+    });
+
+    return `<text ${attrs} transform="${this._getSVGTransform()}" ${this._getSVGStyle()}>${content}</text>`;
+  }
+
   private static measureContext: CanvasRenderingContext2D | null = null;
 }
