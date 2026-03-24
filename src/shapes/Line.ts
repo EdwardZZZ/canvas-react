@@ -46,6 +46,7 @@ export class Line extends Node {
    * Draws the line segments.
    */
   draw(ctx: CanvasRenderingContext2D) {
+     
     const { 
       points = [], 
       fill,

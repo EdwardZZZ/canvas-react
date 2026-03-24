@@ -34,10 +34,35 @@ export interface CanvasEvents {
   onDragEnd?: (e: InteractionEvent) => void;
 }
 
+export interface GradientColorStop {
+  offset: number;
+  color: string;
+}
+
+export interface LinearGradient {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  colorStops: GradientColorStop[];
+}
+
+export interface RadialGradient {
+  x0: number;
+  y0: number;
+  r0: number;
+  x1: number;
+  y1: number;
+  r1: number;
+  colorStops: GradientColorStop[];
+}
+
 /**
  * Base properties for all nodes.
  */
 export interface NodeProps extends CanvasEvents {
+  id?: string;
+  name?: string;
   x?: number;
   y?: number;
   rotation?: number; // In radians
@@ -46,6 +71,7 @@ export interface NodeProps extends CanvasEvents {
   zIndex?: number; // Rendering order
   draggable?: boolean;
   cursor?: string; // CSS cursor style (e.g. 'pointer', 'grab')
+  visible?: boolean;
   
   // Opacity & Composition
   opacity?: number;
@@ -54,6 +80,8 @@ export interface NodeProps extends CanvasEvents {
   // Stroke and Fill
   fill?: string | CanvasGradient | CanvasPattern;
   stroke?: string | CanvasGradient | CanvasPattern;
+  fillLinearGradient?: LinearGradient;
+  fillRadialGradient?: RadialGradient;
   lineWidth?: number;
   lineDash?: number[];
   lineDashOffset?: number;
@@ -173,13 +201,34 @@ export class Node {
       // No redraw needed for cursor change usually, as it's handled by canvas mouse move
   }
 
+  protected _oldGlobalBounds: Rect | null = null;
+
   /**
    * Requests a redraw of the scene.
    * Bubbles up to the root container.
    */
   requestRedraw() {
+      // Track dirty region for partial redraw optimization
+      const currentBounds = this.getGlobalBounds();
+      this._addDirtyRegion(currentBounds);
+      if (this._oldGlobalBounds) {
+          this._addDirtyRegion(this._oldGlobalBounds);
+      }
+      this._oldGlobalBounds = { ...currentBounds };
+
       if (this.parent) {
           this.parent.requestRedraw();
+      }
+  }
+
+  protected _addDirtyRegion(rect: Rect) {
+      let p = this.parent;
+      while (p && p.parent) {
+          p = p.parent;
+      }
+      // If p is the root (Stage/Container), add to its dirty regions
+      if (p && (p as any).addDirtyRegion) {
+          (p as any).addDirtyRegion(rect);
       }
   }
 
@@ -354,6 +403,22 @@ export class Node {
    */
   draw(_ctx: CanvasRenderingContext2D, _viewport?: Rect) {
     // To be implemented by subclasses
+  }
+
+  protected _getFillStyle(ctx: CanvasRenderingContext2D): string | CanvasGradient | CanvasPattern | undefined {
+    if (this.props.fillLinearGradient) {
+      const g = this.props.fillLinearGradient;
+      const grad = ctx.createLinearGradient(g.x0, g.y0, g.x1, g.y1);
+      g.colorStops.forEach(stop => grad.addColorStop(stop.offset, stop.color));
+      return grad;
+    }
+    if (this.props.fillRadialGradient) {
+      const g = this.props.fillRadialGradient;
+      const grad = ctx.createRadialGradient(g.x0, g.y0, g.r0, g.x1, g.y1, g.r1);
+      g.colorStops.forEach(stop => grad.addColorStop(stop.offset, stop.color));
+      return grad;
+    }
+    return this.props.fill;
   }
 
   /**

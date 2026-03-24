@@ -149,25 +149,51 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
       renderLoop.run(time);
 
       if (isDirtyRef.current) {
-          // Clear and render main canvas
-          context.clearRect(0, 0, width, height);
-          
-          // Clear secondary layers
-          const layers = renderLoop.getLayers();
-          layers.forEach((layerCanvas) => {
-              const layerCtx = layerCanvas.getContext('2d');
-              if (layerCtx) {
-                  layerCtx.clearRect(0, 0, width, height);
-              }
-          });
+          const regions = stage.dirtyRegions;
           
           // Update animations (if we add time-based updates to nodes)
           stage.update(time);
-          
-          // Render the scene graph
-          // We define a viewport based on canvas size for culling
-          const viewport = { x: 0, y: 0, width, height };
-          stage.render(context, viewport);
+
+          if (regions.length > 0 && regions.length < 10) {
+              // Partial redraw optimization: only redraw affected areas
+              regions.forEach(rect => {
+                  context.save();
+                  context.beginPath();
+                  context.rect(rect.x, rect.y, rect.width, rect.height);
+                  context.clip();
+                  context.clearRect(rect.x, rect.y, rect.width, rect.height);
+                  
+                  // Clear secondary layers in this region
+                  const layers = renderLoop.getLayers();
+                  layers.forEach((layerCanvas) => {
+                      const layerCtx = layerCanvas.getContext('2d');
+                      if (layerCtx) {
+                          layerCtx.clearRect(rect.x, rect.y, rect.width, rect.height);
+                      }
+                  });
+
+                  stage.render(context, rect);
+                  context.restore();
+              });
+              stage.clearDirtyRegions();
+          } else {
+              // Full redraw (fallback if too many regions or initial draw)
+              context.clearRect(0, 0, width, height);
+              
+              // Clear secondary layers
+              const layers = renderLoop.getLayers();
+              layers.forEach((layerCanvas) => {
+                  const layerCtx = layerCanvas.getContext('2d');
+                  if (layerCtx) {
+                      layerCtx.clearRect(0, 0, width, height);
+                  }
+              });
+              
+              // Render the scene graph
+              const viewport = { x: 0, y: 0, width, height };
+              stage.render(context, viewport);
+              stage.clearDirtyRegions();
+          }
           
           isDirtyRef.current = false;
       }
@@ -297,6 +323,9 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
        // Start panning if no node is hit and interactive mode is enabled
        setIsPanning(true);
        lastPanPosRef.current = { x: coords.x, y: coords.y };
+       // Reset gesture state
+       (lastPanPosRef as any).current.distance = 0;
+       (lastPanPosRef as any).current.angle = 0;
     }
     
     // Map touchstart to mousedown for compatibility
@@ -372,6 +401,48 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
     if (!coords) return;
 
     const hitNode = stage.hitTest(coords);
+
+    // Handle Gesture (Pinch-to-zoom and Rotate)
+    if ('touches' in e && e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const canvasRect = canvasRef.current!.getBoundingClientRect();
+        
+        const p1 = { x: touch1.clientX - canvasRect.left, y: touch1.clientY - canvasRect.top };
+        const p2 = { x: touch2.clientX - canvasRect.left, y: touch2.clientY - canvasRect.top };
+        
+        const distance = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+        if ((lastPanPosRef as any).current.distance) {
+            const oldDistance = (lastPanPosRef as any).current.distance;
+            const oldAngle = (lastPanPosRef as any).current.angle;
+            
+            // Zoom
+            const scaleBy = distance / oldDistance;
+            const oldScale = stage.scaleX;
+            const newScale = Math.max(0.1, Math.min(oldScale * scaleBy, 10));
+            
+            stage.scaleX = newScale;
+            stage.scaleY = newScale;
+            
+            // Pan to keep center fixed
+            stage.x = center.x - (center.x - stage.x) * (newScale / oldScale);
+            stage.y = center.y - (center.y - stage.y) * (newScale / oldScale);
+            
+            // Rotate
+            const deltaAngle = angle - oldAngle;
+            stage.rotation += deltaAngle;
+        }
+        
+        (lastPanPosRef as any).current.distance = distance;
+        (lastPanPosRef as any).current.angle = angle;
+        (lastPanPosRef as any).current.x = center.x;
+        (lastPanPosRef as any).current.y = center.y;
+        
+        return;
+    }
 
     if (hitNode) {
         dispatchEvent(hitNode, e, 'onMouseMove', 'mousemove', coords.x, coords.y);

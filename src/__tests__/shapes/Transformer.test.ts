@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Transformer } from '../../shapes/Transformer';
 import { Node } from '../../core/Node';
+import { Rect } from '../../shapes/Rect';
 
 describe('Transformer', () => {
     let target: Node;
@@ -87,5 +88,58 @@ describe('Transformer', () => {
         transformer.handleDragMove(dragMoveEvent);
         
         expect(target.rotation).toBeCloseTo(Math.PI / 2);
+    });
+
+    it('attaches to multiple targets', () => {
+        const target2 = new Rect({ x: 200, y: 200, width: 50, height: 50 });
+        transformer.attachTo([target, target2]);
+        
+        // Combined bounds should encompass both
+        // target: (100, 100, 100, 100)
+        // target2: (200, 200, 50, 50)
+        // Combined: (100, 100, 150, 150)
+        
+        const combined = (transformer as any).combinedBounds;
+        expect(combined.x).toBe(100);
+        expect(combined.y).toBe(100);
+        expect(combined.width).toBe(150);
+        expect(combined.height).toBe(150);
+    });
+
+    it('transforms multiple targets together on drag', () => {
+        const target2 = new Rect({ x: 200, y: 200, width: 100, height: 100 });
+        transformer.attachTo([target, target2]);
+        
+        // Center: (100 + 300)/2 = 200, (100 + 300)/2 = 200
+        // Combined: (100, 100, 200, 200)
+        
+        // Simulate drag start on bottom-right handle (300, 300)
+        transformer.hitTest({ x: 300, y: 300 });
+        
+        const dragStartEvent = {
+            globalX: 300,
+            globalY: 300,
+            stopPropagation: vi.fn()
+        } as any;
+        
+        transformer.handleDragStart(dragStartEvent);
+        
+        // Drag to (400, 400) -> Scale 2x
+        const dragMoveEvent = {
+            globalX: 400,
+            globalY: 400,
+            stopPropagation: vi.fn()
+        } as any;
+        
+        transformer.handleDragMove(dragMoveEvent);
+        
+        // ScaleX = 1 + (400-300)/200 = 1.5
+        // target (100, 100):
+        // center (200, 200)
+        // dx = (100 - 200) * 1.5 = -150
+        // target.x = 200 - 150 = 50
+        
+        expect(target.x).toBeCloseTo(50);
+        expect(target2.x).toBeCloseTo(200); // (200-200)*1.5 = 0 -> 200 + 0 = 200
     });
 });

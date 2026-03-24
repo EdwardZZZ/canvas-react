@@ -19,6 +19,7 @@ export class Rect extends Node {
    * Draws the rectangle.
    */
   draw(ctx: CanvasRenderingContext2D) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { width = 100, height = 100, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin, cornerRadius } = this.props;
     
     ctx.beginPath();
@@ -34,8 +35,9 @@ export class Rect extends Node {
       ctx.rect(0, 0, width, height);
     }
     
-    if (fill) {
-      ctx.fillStyle = fill;
+    const _fillStyle = this._getFillStyle(ctx);
+    if (_fillStyle) {
+      ctx.fillStyle = _fillStyle;
       ctx.fill();
     }
     
@@ -58,6 +60,7 @@ export class Rect extends Node {
   }
 
   protected _generateSVGTags(): string {
+     
     const { width = 100, height = 100, fill, stroke, lineWidth, cornerRadius } = this.props;
     let attrs = `x="0" y="0" width="${width}" height="${height}" `;
     if (cornerRadius) {

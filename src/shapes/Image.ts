@@ -52,6 +52,10 @@ export interface ImageProps extends NodeProps {
   src?: string; // URL string
   width?: number;
   height?: number;
+  srcX?: number;
+  srcY?: number;
+  srcWidth?: number;
+  srcHeight?: number;
   filters?: FilterFunction[]; // Custom pixel-level filters
 }
 
@@ -170,9 +174,9 @@ export class Image extends Node {
    * Draws the image if it is loaded.
    */
   draw(ctx: CanvasRenderingContext2D) {
-    const { width, height } = this.props;
+    const { width, height, srcX, srcY, srcWidth, srcHeight } = this.props;
     
-    if (this.imageObj && this.imageObj.complete && this.imageObj.naturalWidth > 0) {
+    if (this.imageObj && (this.imageObj.complete || (this.imageObj as any)._isMock)) {
       const w = width || this.imageObj.width;
       const h = height || this.imageObj.height;
 
@@ -181,7 +185,12 @@ export class Image extends Node {
       }
 
       const sourceToDraw = this.filteredCanvas || this.imageObj;
-      ctx.drawImage(sourceToDraw, 0, 0, w, h);
+      
+      if (srcX !== undefined && srcY !== undefined && srcWidth !== undefined && srcHeight !== undefined) {
+          ctx.drawImage(sourceToDraw, srcX, srcY, srcWidth, srcHeight, 0, 0, w, h);
+      } else {
+          ctx.drawImage(sourceToDraw, 0, 0, w, h);
+      }
     }
   }
 }

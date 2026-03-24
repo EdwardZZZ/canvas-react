@@ -37,6 +37,41 @@ function MyScene() {
 }
 ```
 
+## Node Caching
+
+While `Layer` provides isolation at the canvas level, `cache()` provides optimization at the individual node level.
+
+### `cache()` vs `Layer`
+
+- **Layer**: Creates a physical `<canvas>` element. Good for grouping many objects that change together.
+- **Node Cache**: Draws the node (and its children) into an internal offscreen bitmap. Good for complex shapes or text that don't change often but are rendered many times.
+
+### Usage
+
+```tsx
+const rectRef = useRef(null);
+
+useEffect(() => {
+  if (rectRef.current) {
+    // Rasterize this node into a bitmap
+    rectRef.current.cache();
+  }
+}, []);
+
+return <Rect ref={rectRef} width={500} height={500} fill="complex-pattern" />;
+```
+
+When a node is cached, any subsequent property changes (except for position and opacity) will not be visible until you call `clearCache()` or `cache()` again to refresh the bitmap.
+
+## Partial Redraw (Dirty Rectangles)
+
+Canvas React features an advanced **Partial Redraw** system. Instead of clearing the entire canvas on every change, the engine:
+1.  Tracks the "dirty" bounding boxes of nodes that changed.
+2.  Sets a clipping mask to these regions.
+3.  Only redraws the objects that intersect with these regions.
+
+This optimization happens automatically under the hood and significantly boosts performance in large scenes with many objects.
+
 ## Smart Redrawing
 
 The engine automatically tracks "dirty" states. Redrawing only happens when:

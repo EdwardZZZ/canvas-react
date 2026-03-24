@@ -9,12 +9,14 @@ export class Ellipse extends Node {
   declare props: EllipseProps;
 
   draw(ctx: CanvasRenderingContext2D) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { radiusX = 50, radiusY = 30, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     ctx.beginPath();
     ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
     
-    if (fill) {
-      ctx.fillStyle = fill;
+    const _fillStyle = this._getFillStyle(ctx);
+    if (_fillStyle) {
+      ctx.fillStyle = _fillStyle;
       ctx.fill();
     }
     

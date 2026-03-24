@@ -6,6 +6,7 @@ import { Matrix2D } from '../../core/Matrix';
 import { Timeline } from '../../core/Timeline';
 import { Tween } from '../../core/Tween';
 import { Assets } from '../../core/Assets';
+import { NodeFactory } from '../../core/NodeFactory';
 
 describe('Engine Core', () => {
   const getMockCtx = () => ({
@@ -149,6 +150,56 @@ describe('Engine Core', () => {
         // Test clear cache
         node.clearCache();
         expect(node['_cacheCanvas']).toBeNull();
+    });
+  });
+
+  describe('NodeFactory', () => {
+    it('creates a shape from JSON', () => {
+      const json = {
+        type: 'Rect',
+        props: { x: 10, y: 20, width: 100, height: 100, fill: 'red' }
+      };
+      const node = NodeFactory.create(json);
+      expect(node).toBeInstanceOf(Rect);
+      expect(node?.props.x).toBe(10);
+      expect(node?.props.fill).toBe('red');
+    });
+
+    it('creates a container with children from JSON', () => {
+      const json = {
+        type: 'Container',
+        props: { x: 50 },
+        children: [
+          {
+            type: 'Rect',
+            props: { width: 10, height: 10 }
+          }
+        ]
+      };
+      const container = NodeFactory.create(json) as Container;
+      expect(container).toBeInstanceOf(Container);
+      expect(container.props.x).toBe(50);
+      expect(container.children.length).toBe(1);
+      expect(container.children[0]).toBeInstanceOf(Rect);
+    });
+
+    it('creates complex nested structures from JSON', () => {
+      const json = {
+        type: 'Container',
+        props: { name: 'root' },
+        children: [
+          {
+            type: 'Container',
+            props: { name: 'sub' },
+            children: [
+              { type: 'Rect', props: { name: 'rect1' } }
+            ]
+          }
+        ]
+      };
+      const root = NodeFactory.create(json) as Container;
+      expect(root.find('.sub')).toBeDefined();
+      expect(root.find('.rect1')).toBeDefined();
     });
   });
 
@@ -335,6 +386,26 @@ describe('Engine Core', () => {
       expect(ctx.rect).toHaveBeenCalledWith(0, 0, 100, 50);
       expect(ctx.fill).toHaveBeenCalled();
     });
+    it('finds children by id and name', () => {
+      const container = new Container();
+      const child1 = new Rect({ id: 'target', width: 10 });
+      const child2 = new Rect({ name: 'enemy', width: 20 });
+      const subContainer = new Container();
+      const child3 = new Rect({ name: 'enemy', width: 30 });
+      
+      subContainer.add(child3);
+      container.add(child1);
+      container.add(child2);
+      container.add(subContainer);
+
+      expect(container.find('#target')).toBe(child1);
+      expect(container.find('.enemy')).toBe(child2);
+      
+      const enemies = container.findAll('.enemy');
+      expect(enemies.length).toBe(2);
+      expect(enemies).toContain(child2);
+      expect(enemies).toContain(child3);
+    });
   });
 
   describe('Matrix2D', () => {
@@ -436,6 +507,61 @@ describe('Engine Core', () => {
         // Without loop tick it stays at end in seek, 
         // but let's check basic seek behavior
         expect(node.props.x).toBe(100);
+    });
+
+    it('supports looping', () => {
+        const node = new Node({ x: 0 });
+        const timeline = new Timeline({ loop: true });
+        timeline.add(new Tween({ node, x: 100, duration: 1 }), 0);
+        
+        timeline.play();
+        (timeline as any)._tick(1500); // Should have looped once
+        expect(node.x).toBeLessThan(100);
+    });
+
+    it('can pause and resume', () => {
+        const node = new Node({ x: 0 });
+        const timeline = new Timeline();
+        timeline.add(new Tween({ node, x: 100, duration: 1 }), 0);
+        
+        timeline.play();
+        (timeline as any)._tick(500);
+        const xAtPause = node.x;
+        expect(xAtPause).toBeGreaterThan(0);
+        
+        timeline.pause();
+        // Tick while paused
+        (timeline as any)._tick(1000);
+        expect(node.x).toBe(xAtPause);
+        
+        timeline.play();
+        // Recalculate _startTime to resume from 500ms
+        (timeline as any)._startTime = 2000 - 500;
+        (timeline as any)._tick(2100);
+        expect(node.x).toBeGreaterThan(xAtPause);
+    });
+  });
+
+  describe('Tween', () => {
+    it('animates properties over time', () => {
+        const node = new Node({ x: 0 });
+        const tween = new Tween({ node, x: 100, duration: 1 });
+        
+        // Manual scrub
+        (tween as any)._updateFromTimeline(500);
+        
+        expect(node.x).toBeGreaterThan(0);
+        expect(node.x).toBeLessThan(100);
+    });
+
+    it('stops animation on finish', () => {
+        const node = new Node({ x: 0 });
+        const onFinish = vi.fn();
+        const tween = new Tween({ node, x: 100, duration: 0.1, onFinish });
+        
+        // Scrub to end
+        (tween as any)._updateFromTimeline(100);
+        expect(node.x).toBe(100);
     });
   });
 

@@ -17,12 +17,14 @@ export class Circle extends Node {
    * Draws the circle on the canvas.
    */
   draw(ctx: CanvasRenderingContext2D) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { radius = 50, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     
-    if (fill) {
-      ctx.fillStyle = fill;
+    const _fillStyle = this._getFillStyle(ctx);
+    if (_fillStyle) {
+      ctx.fillStyle = _fillStyle;
       ctx.fill();
     }
     
@@ -62,6 +64,7 @@ export class Circle extends Node {
   }
 
   protected _generateSVGTags(): string {
+     
     const { radius = 50, fill, stroke, lineWidth } = this.props;
     let attrs = `cx="0" cy="0" r="${radius}" `;
     if (fill) attrs += `fill="${fill}" `;

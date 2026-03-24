@@ -20,6 +20,7 @@ export default defineConfig({
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/core-concepts' },
+            { text: 'Groups vs Layers', link: '/guide/groups-vs-layers' },
             { text: 'Layers & Performance', link: '/guide/layers' },
             { text: 'Exporting', link: '/guide/exporting' },
             { text: 'Animations', link: '/guide/animations' }
@@ -35,6 +36,7 @@ export default defineConfig({
           text: 'Components',
           items: [
             { text: 'Canvas', link: '/api/canvas' },
+            { text: 'Groups vs Layers', link: '/guide/groups-vs-layers' },
             { text: 'Group', link: '/api/group' },
             { text: 'Layer', link: '/api/layer' },
             { text: 'Shapes', link: '/api/shapes' }

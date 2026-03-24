@@ -10,7 +10,8 @@ export interface TextProps extends NodeProps {
   fontStyle?: string;
   fontVariant?: string;
   fontWeight?: string;
-  width?: number; // Max width for wrapping
+  width?: number; // Max width for wrapping or alignment
+  wordWrap?: boolean; // Enable/disable word wrap
   lineHeight?: number; // Line height multiplier (default 1.2)
   align?: 'left' | 'center' | 'right';
   verticalAlign?: 'top' | 'middle' | 'bottom';
@@ -25,20 +26,25 @@ export class Text extends Node {
   /**
    * Helper to wrap text into lines based on width.
    */
-  private getLines(ctx: CanvasRenderingContext2D, text: string, maxWidth?: number): string[] {
-      if (!maxWidth) return text.split('\n');
+  private getLines(ctx: CanvasRenderingContext2D, text: string, maxWidth?: number, wordWrap?: boolean): string[] {
+      if (!maxWidth || wordWrap === false) return text.split('\n');
 
       const linesToWrap = text.split('\n');
       const lines: string[] = [];
 
       for (const lineToWrap of linesToWrap) {
+          if (ctx.measureText(lineToWrap).width <= maxWidth) {
+              lines.push(lineToWrap);
+              continue;
+          }
+
           const words = lineToWrap.split(' ');
           let currentLine = words[0];
 
           for (let i = 1; i < words.length; i++) {
               const word = words[i];
               const width = ctx.measureText(currentLine + " " + word).width;
-              if (width < maxWidth) {
+              if (width <= maxWidth) {
                   currentLine += " " + word;
               } else {
                   lines.push(currentLine);
@@ -61,7 +67,6 @@ export class Text extends Node {
         fontStyle = 'normal',
         fontVariant = 'normal',
         fontWeight = 'normal',
-        fill,
         stroke,
         lineWidth,
         lineDash,
@@ -69,6 +74,7 @@ export class Text extends Node {
         lineCap,
         lineJoin,
         width,
+        wordWrap = true,
         lineHeight = 1.2,
         align = 'left',
         verticalAlign = 'top'
@@ -77,7 +83,7 @@ export class Text extends Node {
     ctx.font = `${fontStyle} ${fontVariant} ${fontWeight} ${fontSize}px ${fontFamily}`;
     ctx.textBaseline = 'top'; // Handled via manual offset if needed
 
-    const lines = this.getLines(ctx, text, width);
+    const lines = this.getLines(ctx, text, width, wordWrap);
     const lh = fontSize * lineHeight;
     
     let startY = 0;
@@ -92,16 +98,17 @@ export class Text extends Node {
     lines.forEach((line, index) => {
         let x = 0;
         if (width && align !== 'left') {
-            const lineWidth = ctx.measureText(line).width;
+            const lineWidthVal = ctx.measureText(line).width;
             if (align === 'center') {
-                x = (width - lineWidth) / 2;
+                x = (width - lineWidthVal) / 2;
             } else if (align === 'right') {
-                x = width - lineWidth;
+                x = width - lineWidthVal;
             }
         }
         
-        if (fill || (!fill && !stroke)) {
-            ctx.fillStyle = fill || 'black';
+        const _fillStyle = this._getFillStyle(ctx);
+        if (_fillStyle || (!this.props.fill && !stroke)) {
+            ctx.fillStyle = _fillStyle || 'black';
             ctx.fillText(line, x, startY + index * lh);
         }
         
@@ -128,6 +135,7 @@ export class Text extends Node {
         fontVariant = 'normal',
         fontWeight = 'normal',
         width,
+        wordWrap = true,
         lineHeight = 1.2,
         verticalAlign = 'top'
     } = this.props;
@@ -140,10 +148,10 @@ export class Text extends Node {
     if (Text.measureContext) {
       Text.measureContext.font = `${fontStyle} ${fontVariant} ${fontWeight} ${fontSize}px ${fontFamily}`;
       
-      const lines = this.getLines(Text.measureContext, text, width);
+      const lines = this.getLines(Text.measureContext, text, width, wordWrap);
       
       let maxWidth = 0;
-      if (width) {
+      if (width && wordWrap !== false) {
           maxWidth = width;
       } else {
           // Calculate max width of all lines
@@ -183,6 +191,7 @@ export class Text extends Node {
   }
 
   protected _generateSVGTags(): string {
+     
     const { text = '', fill, fontSize = 16, fontFamily = 'Arial', fontStyle = 'normal', fontWeight = 'normal', align = 'left', verticalAlign = 'top', lineHeight = 1.2 } = this.props;
     
     // Simplistic text export.

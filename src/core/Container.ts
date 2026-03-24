@@ -30,6 +30,16 @@ export class Container extends Node {
    * Adds a child node to the container.
    * Automatically sorts children by z-index.
    */
+  public dirtyRegions: Rect[] = [];
+
+  addDirtyRegion(rect: Rect) {
+      this.dirtyRegions.push(rect);
+  }
+
+  clearDirtyRegions() {
+      this.dirtyRegions = [];
+  }
+
   add(node: Node) {
     node.parent = this;
     this.children.push(node);
@@ -172,6 +182,53 @@ export class Container extends Node {
       }
     }
     return null;
+  }
+
+  /**
+   * Find a single node by its id or name (CSS-like selector: #id or .name)
+   */
+  find(selector: string): Node | null {
+    if (selector.startsWith('#')) {
+      const id = selector.substring(1);
+      return this._findRecursive(node => node.props.id === id);
+    } else if (selector.startsWith('.')) {
+      const name = selector.substring(1);
+      return this._findRecursive(node => node.props.name === name);
+    }
+    return null;
+  }
+
+  /**
+   * Find all nodes matching the name (CSS-like selector: .name)
+   */
+  findAll(selector: string): Node[] {
+    if (selector.startsWith('.')) {
+      const name = selector.substring(1);
+      const results: Node[] = [];
+      this._findAllRecursive(node => node.props.name === name, results);
+      return results;
+    }
+    return [];
+  }
+
+  private _findRecursive(predicate: (node: Node) => boolean): Node | null {
+    for (const child of this.children) {
+      if (predicate(child)) return child;
+      if (child instanceof Container) {
+        const found = child._findRecursive(predicate);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  private _findAllRecursive(predicate: (node: Node) => boolean, results: Node[]) {
+    for (const child of this.children) {
+      if (predicate(child)) results.push(child);
+      if (child instanceof Container) {
+        child._findAllRecursive(predicate, results);
+      }
+    }
   }
 
   protected _generateSVGTags(): string {

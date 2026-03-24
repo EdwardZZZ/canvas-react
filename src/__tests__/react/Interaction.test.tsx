@@ -19,6 +19,7 @@ describe('Interaction System', () => {
       beginPath: vi.fn(),
       arc: vi.fn(),
       rect: vi.fn(),
+      clip: vi.fn(),
       fill: vi.fn(),
       stroke: vi.fn(),
       setLineDash: vi.fn(),

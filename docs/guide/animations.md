@@ -37,6 +37,16 @@ function MyAnimatedRect() {
 }
 ```
 
+### Tween Controls
+
+```tsx
+const tween = new Tween({ node, x: 100 });
+
+tween.play();
+tween.pause(); // Pause at current position
+tween.stop();  // Stop and reset
+```
+
 ## The Timeline Class
 
 A `Timeline` is a powerful tool for sequencing multiple `Tween` animations together. It allows you to:

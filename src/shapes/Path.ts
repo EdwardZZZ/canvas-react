@@ -53,6 +53,7 @@ export class Path extends Node {
    * Draws the SVG path.
    */
   draw(ctx: CanvasRenderingContext2D) {
+     
     const { data, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     
     const path = new Path2D(data);
