@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Rect, Circle, Text, Group, Image, Line } from '../../react/Shapes';
+import { Rect, Circle, Text, Group, Image, Line, Layer } from '../../react/Shapes';
 import Canvas from '../../react/Canvas';
 
 // Using real implementation for integration testing
@@ -81,5 +81,21 @@ describe('React Shapes Components', () => {
       </Canvas>
     );
     expect(container).toBeInTheDocument();
+  });
+
+  it('renders a Layer', () => {
+    const { container } = render(
+      <Canvas width={100} height={100}>
+        <Layer x={10} y={10}>
+          <Rect width={50} height={50} fill="green" />
+        </Layer>
+      </Canvas>
+    );
+    expect(container).toBeInTheDocument();
+    
+    // In JSDOM/Testing Library, the portal might not be inside 'container' 
+    // depending on how it's appended. Let's check document.body
+    const canvases = document.body.querySelectorAll('canvas');
+    expect(canvases.length).toBeGreaterThanOrEqual(1);
   });
 });

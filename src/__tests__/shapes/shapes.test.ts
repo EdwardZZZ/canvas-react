@@ -61,6 +61,16 @@ describe('Shapes Core', () => {
         const bounds = shape.getSelfBounds();
         expect(bounds).toEqual({ x: 0, y: 0, width: 100, height: 50 });
     });
+
+    it('exports to SVG', () => {
+        const rect = new Rect({ width: 100, height: 50, fill: 'red', cornerRadius: 5 });
+        const svg = rect.toSVG();
+        expect(svg).toContain('<rect');
+        expect(svg).toContain('width="100"');
+        expect(svg).toContain('height="50"');
+        expect(svg).toContain('fill="red"');
+        expect(svg).toContain('rx="5"');
+    });
   });
 
   describe('Circle', () => {

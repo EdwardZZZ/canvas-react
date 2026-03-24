@@ -23,6 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# VitePress
+docs/.vitepress/dist
+docs/.vitepress/cache
+
 # Testing
 coverage
 coverage/

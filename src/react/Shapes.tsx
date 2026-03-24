@@ -215,7 +215,7 @@ const LayerPortal: React.FC<{ canvas: HTMLCanvasElement }> = ({ canvas }) => {
     
     useEffect(() => {
         if (layerContext && layerContext.parentElement) {
-            layerContext.parentElement.insertBefore(canvas, layerContext.nextSibling);
+            layerContext.parentElement.appendChild(canvas);
             
             // Sync dimensions
             const syncSize = () => {
@@ -235,7 +235,6 @@ const LayerPortal: React.FC<{ canvas: HTMLCanvasElement }> = ({ canvas }) => {
             
             syncSize();
             
-            // Listen for resize? For now just sync once
             return () => {
                 if (canvas.parentElement) {
                     canvas.parentElement.removeChild(canvas);

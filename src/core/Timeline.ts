@@ -15,8 +15,9 @@ export class Timeline {
     add(tween: Tween, offset: number = 0) {
         // Set the start delay of the tween relative to the timeline
         (tween as any)._timelineOffset = offset;
+        
         this.tweens.push(tween);
-        this._duration = Math.max(this._duration, offset + (tween as any)._duration * 1000);
+        this._duration = Math.max(this._duration, offset + (tween as any).config.duration * 1000);
         return this;
     }
 
@@ -65,12 +66,8 @@ export class Timeline {
             
             // Hacky way to update tween manually
             // A real implementation would decouple Tween from performance.now() and allow manual tick
-            if (tweenTime >= 0 && tweenTime <= (tween as any)._duration * 1000) {
+            if (tweenTime >= 0) {
                  (tween as any)._updateFromTimeline(tweenTime);
-            } else if (tweenTime > (tween as any)._duration * 1000) {
-                 (tween as any)._updateFromTimeline((tween as any)._duration * 1000);
-            } else if (tweenTime < 0) {
-                 (tween as any)._updateFromTimeline(0);
             }
         }
     }

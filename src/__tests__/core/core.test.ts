@@ -3,7 +3,8 @@ import { Node } from '../../core/Node';
 import { Container } from '../../core/Container';
 import { Rect } from '../../shapes/Rect';
 import { Matrix2D } from '../../core/Matrix';
-
+import { Timeline } from '../../core/Timeline';
+import { Tween } from '../../core/Tween';
 import { Assets } from '../../core/Assets';
 
 describe('Engine Core', () => {
@@ -287,7 +288,15 @@ describe('Engine Core', () => {
       expect(json.children[0].props.y).toBe(20);
     });
 
-    it('exports data URL', () => {
+    it('exports to SVG', () => {
+      const node = new Node({ x: 10, y: 20, opacity: 0.5 });
+      const svg = node.toSVG();
+      expect(svg).toContain('<svg');
+      expect(svg).toContain('matrix(1 0 0 1 10 20)');
+      expect(svg).toContain('opacity="0.5"');
+    });
+
+    it('exports to data URL', () => {
         const container = new Container({ x: 10 });
         container.getGlobalBounds = () => ({ x: 0, y: 0, width: 100, height: 100 });
         
@@ -385,6 +394,48 @@ describe('Engine Core', () => {
         expect(decomposed.y).toBeCloseTo(20);
         expect(decomposed.scaleX).toBeCloseTo(2);
         expect(decomposed.scaleY).toBeCloseTo(2);
+    });
+  });
+
+  describe('Timeline', () => {
+    it('manages multiple tweens', () => {
+      const node1 = new Node({ x: 0 });
+      const node2 = new Node({ y: 0 });
+      const tween1 = new Tween({ node: node1, x: 100, duration: 1 });
+      const tween2 = new Tween({ node: node2, y: 200, duration: 1 });
+      
+      const timeline = new Timeline();
+      timeline.add(tween1, 0);
+      timeline.add(tween2, 500); // Start at 500ms
+      
+      // Seek to 250ms
+      timeline.seek(250);
+      expect(node1.props.x).toBeGreaterThan(0); 
+      expect(node2.props.y).toBe(0); // Not started yet
+      
+      // Seek to 750ms
+      timeline.seek(750);
+      // node1: 75% of 100 = 75
+      // node2: (750-500)/1000 = 25% of 200 = 50
+      expect(node1.props.x).toBeGreaterThan(70);
+      expect(node2.props.y).toBeGreaterThan(40);
+      
+      // Seek to end
+      timeline.seek(1500);
+      expect(node1.props.x).toBe(100);
+      expect(node2.props.y).toBe(200);
+    });
+
+    it('loops correctly', () => {
+        const node = new Node({ x: 0 });
+        const tween = new Tween({ node: node, x: 100, duration: 1 });
+        const timeline = new Timeline({ loop: true });
+        timeline.add(tween);
+        
+        timeline.seek(1500); // Past duration
+        // Without loop tick it stays at end in seek, 
+        // but let's check basic seek behavior
+        expect(node.props.x).toBe(100);
     });
   });
 

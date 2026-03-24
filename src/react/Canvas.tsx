@@ -92,10 +92,10 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
     stage,
     canvas: canvasRef.current,
     toDataURL: (options) => {
-        if (canvasRef.current) {
-            return canvasRef.current.toDataURL(options?.mimeType, options?.quality);
-        }
-        return '';
+        return stage.toDataURL(options);
+    },
+    toSVG: () => {
+        return stage.toSVG();
     }
   }), [stage]);
 
@@ -520,8 +520,8 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
                 onTouchCancel={handlePointerUp}
                 {...rest} 
               />
-              {debug && <DevTools />}
               {children}
+              {debug && <DevTools />}
           </div>
         </LayerContext.Provider>
       </SceneContext.Provider>

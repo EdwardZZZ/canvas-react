@@ -27,20 +27,7 @@ export class Tween {
 
   play() {
     if (this.isRunning) return;
-
-    this.startProps = {};
-    this.deltaProps = {};
-
-    const { node, ...propsToAnimate } = this.config;
-
-    for (const key in propsToAnimate) {
-      if (typeof node.props[key] === 'number' || typeof (node as any)[key] === 'number') {
-        const startValue = (node as any)[key] !== undefined ? (node as any)[key] : node.props[key];
-        this.startProps[key] = startValue;
-        this.deltaProps[key] = propsToAnimate[key] - startValue;
-      }
-    }
-
+    this._prepareForTimeline();
     this.startTime = performance.now();
     this.isRunning = true;
 
@@ -82,10 +69,34 @@ export class Tween {
   }
 
   /**
+   * Internal method to prepare properties for animation
+   */
+  _prepareForTimeline() {
+    this.startProps = {};
+    this.deltaProps = {};
+
+    const { node, ...propsToAnimate } = this.config;
+
+    for (const key in propsToAnimate) {
+      // Filter out non-animatable properties
+      if (key === 'duration' || key === 'easing' || key === 'onUpdate' || key === 'onFinish') continue;
+
+      const startValue = (node as any)[key] !== undefined ? (node as any)[key] : node.props[key];
+      if (typeof startValue === 'number') {
+        this.startProps[key] = startValue;
+        this.deltaProps[key] = propsToAnimate[key] - startValue;
+      }
+    }
+  }
+
+  /**
    * Internal method used by Timeline to scrub the tween
    */
   _updateFromTimeline(timeMs: number) {
-      if (!this.config.node || !this.startProps) return;
+      if (!this.config.node) return;
+      
+      // Ensure props are prepared
+      this._prepareForTimeline();
 
       const elapsed = timeMs / 1000;
       const progress = Math.min(1, elapsed / this.config.duration!);
