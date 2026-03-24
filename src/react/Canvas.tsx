@@ -3,6 +3,7 @@ import { Container } from '../core/Container';
 import { SceneContext, RenderContext, RenderLoop, LayerContext } from './CanvasContext';
 import { InteractionEvent, Node, CanvasEvents } from '../core/Node';
 import { DevTools } from './DevTools';
+import { canvasReconciler } from './reconciler';
 
 /**
  * Default implementation of the render loop.
@@ -571,6 +572,41 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
       }
   };
 
+  const containerRef = useRef<any>(null);
+
+  React.useLayoutEffect(() => {
+    if (!containerRef.current) {
+      containerRef.current = canvasReconciler.createContainer(
+        stage,
+        0, // LegacyRoot
+        null,
+        false,
+        null,
+        '',
+        (error: any) => console.error(error),
+        (error: any) => console.error(error),
+        (error: any) => console.error(error),
+        () => { console.log("Update Container Callback, children:", stage.children.length); }
+      );
+    }
+    
+    const node = (
+      <RenderContext.Provider value={renderLoop}>
+        {children}
+      </RenderContext.Provider>
+    );
+
+    canvasReconciler.updateContainerSync(node, containerRef.current, null, () => {});
+  }, [children, stage, renderLoop]);
+
+  useEffect(() => {
+    return () => {
+      if (containerRef.current) {
+        canvasReconciler.updateContainer(null, containerRef.current, null, () => { console.log("Update Container Callback, children:", stage.children.length); });
+      }
+    };
+  }, []);
+
   return (
     <RenderContext.Provider value={renderLoop}>
       <SceneContext.Provider value={stage}>
@@ -591,7 +627,6 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
                 onTouchCancel={handlePointerUp}
                 {...rest} 
               />
-              {children}
               {debug && <DevTools />}
           </div>
         </LayerContext.Provider>

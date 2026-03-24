@@ -4,6 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Rect, Circle, Text, Group, Image, Line, Layer } from '../../react/Shapes';
 import Canvas from '../../react/Canvas';
 
+import { Text as EngineText } from '../../shapes/Text';
+
 // Using real implementation for integration testing
 // This ensures that the components correctly instantiate the engine nodes
 // and add them to the scene graph.
@@ -41,7 +43,7 @@ describe('React Shapes Components', () => {
     // Fix: Text.ts uses a static property measureContext.
     // We can manually set it to our mock context!
     // @ts-expect-error - overriding readonly static property for test
-    Text.measureContext = mockContext;
+    EngineText.measureContext = mockContext;
     
     // Also add measureText to mockContext (it was missing in the spy object above?)
     // Wait, the spy object above had 'fillText' but no 'measureText' explicitly defined in the object literal?
