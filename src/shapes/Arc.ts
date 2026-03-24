@@ -11,7 +11,6 @@ export class Arc extends Node {
   declare props: ArcProps;
 
   draw(ctx: CanvasRenderingContext2D) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { innerRadius = 0, outerRadius = 50, angle = Math.PI, clockwise = false, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
 
     ctx.beginPath();

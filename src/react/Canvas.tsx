@@ -586,7 +586,7 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
         (error: any) => console.error(error),
         (error: any) => console.error(error),
         (error: any) => console.error(error),
-        () => { console.log("Update Container Callback, children:", stage.children.length); }
+        () => {}
       );
     }
     
@@ -602,7 +602,7 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
   useEffect(() => {
     return () => {
       if (containerRef.current) {
-        canvasReconciler.updateContainer(null, containerRef.current, null, () => { console.log("Update Container Callback, children:", stage.children.length); });
+        canvasReconciler.updateContainer(null, containerRef.current, null, () => {});
       }
     };
   }, []);

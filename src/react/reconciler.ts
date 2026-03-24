@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Reconciler from 'react-reconciler';
 import { Node } from '../core/Node';
 import { Container } from '../core/Container';
@@ -30,7 +29,7 @@ export type TransitionStatus = never;
 
 const NO_CONTEXT: HostContext = {};
 
-const createInstance = (type: Type, props: Props, rootContainerInstance: Container, hostContext: HostContext, internalInstanceHandle: Reconciler.OpaqueHandle): Instance => {
+const createInstance = (type: Type, props: Props, _rootContainerInstance: Container, _hostContext: HostContext, _internalInstanceHandle: Reconciler.OpaqueHandle): Instance => {
   let instance: Node;
 
   switch (type) {
@@ -86,7 +85,7 @@ const hostConfig: any = {
 
   createInstance,
 
-  createTextInstance(text: string, rootContainerInstance: Container, hostContext: HostContext, internalInstanceHandle: Reconciler.OpaqueHandle): TextInstance {
+  createTextInstance(_text: string, _rootContainerInstance: Container, _hostContext: HostContext, _internalInstanceHandle: Reconciler.OpaqueHandle): TextInstance {
     throw new Error('Text nodes are not supported in Canvas React. Use the <Text /> component.');
   },
 
@@ -96,19 +95,19 @@ const hostConfig: any = {
     }
   },
 
-  finalizeInitialChildren(instance: Instance, type: Type, props: Props, rootContainerInstance: Container, hostContext: HostContext): boolean {
+  finalizeInitialChildren(_instance: Instance, _type: Type, _props: Props, _rootContainerInstance: Container, _hostContext: HostContext): boolean {
     return false;
   },
 
-  shouldSetTextContent(type: Type, props: Props): boolean {
+  shouldSetTextContent(_type: Type, _props: Props): boolean {
     return false;
   },
 
-  getRootHostContext(rootContainerInstance: Container): HostContext {
+  getRootHostContext(_rootContainerInstance: Container): HostContext {
     return NO_CONTEXT;
   },
 
-  getChildHostContext(parentHostContext: HostContext, type: Type, rootContainerInstance: Container): HostContext {
+  getChildHostContext(_parentHostContext: HostContext, _type: Type, _rootContainerInstance: Container): HostContext {
     return NO_CONTEXT;
   },
 
@@ -116,7 +115,7 @@ const hostConfig: any = {
     return instance;
   },
 
-  prepareForCommit(containerInfo: Container): Record<string, any> | null {
+  prepareForCommit(_containerInfo: Container): Record<string, any> | null {
     return null;
   },
 
@@ -124,7 +123,7 @@ const hostConfig: any = {
     containerInfo.requestRedraw();
   },
 
-  preparePortalMount(containerInfo: Container): void {
+  preparePortalMount(_containerInfo: Container): void {
     // noop
   },
 
@@ -172,19 +171,19 @@ const hostConfig: any = {
     container.remove(child as Node);
   },
 
-  resetTextContent(instance: Instance): void {
+  resetTextContent(_instance: Instance): void {
     // noop
   },
 
-  commitTextUpdate(textInstance: TextInstance, oldText: string, newText: string): void {
+  commitTextUpdate(_textInstance: TextInstance, _oldText: string, _newText: string): void {
     // noop
   },
 
-  commitMount(instance: Instance, type: Type, newProps: Props, internalInstanceHandle: Reconciler.OpaqueHandle): void {
+  commitMount(_instance: Instance, _type: Type, _newProps: Props, _internalInstanceHandle: Reconciler.OpaqueHandle): void {
     // noop
   },
 
-  commitUpdate(instance: Instance, type: Type, oldProps: Props, newProps: Props, internalInstanceHandle: Reconciler.OpaqueHandle): void {
+  commitUpdate(instance: Instance, _type: Type, _oldProps: Props, newProps: Props, _internalInstanceHandle: Reconciler.OpaqueHandle): void {
     instance.setProps(newProps);
   },
 
@@ -192,7 +191,7 @@ const hostConfig: any = {
     instance.setProps({ visible: false });
   },
 
-  hideTextInstance(textInstance: TextInstance): void {
+  hideTextInstance(_textInstance: TextInstance): void {
     // noop
   },
 
@@ -200,7 +199,7 @@ const hostConfig: any = {
     instance.setProps({ visible: props.visible !== false });
   },
 
-  unhideTextInstance(textInstance: TextInstance, text: string): void {
+  unhideTextInstance(_textInstance: TextInstance, _text: string): void {
     // noop
   },
 

@@ -17,7 +17,6 @@ export class Circle extends Node {
    * Draws the circle on the canvas.
    */
   draw(ctx: CanvasRenderingContext2D) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { radius = 50, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);

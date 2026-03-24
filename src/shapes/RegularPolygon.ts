@@ -9,7 +9,6 @@ export class RegularPolygon extends Node {
   declare props: RegularPolygonProps;
 
   draw(ctx: CanvasRenderingContext2D) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { sides = 5, radius = 50, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     if (sides < 3) return;
 

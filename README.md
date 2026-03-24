@@ -7,6 +7,7 @@ A lightweight, high-performance Canvas rendering engine built with TypeScript an
 ## Features
 
 - **Declarative API**: Compose scenes using React components like `<Rect>`, `<Circle>`, `<Group>`.
+- **React Reconciler**: Custom React renderer that maps Fiber tree directly to Canvas Scene Graph, bypassing DOM diffing for maximum performance.
 - **Scene Graph**: Built-in hierarchical object management (parent-child relationships).
 - **Interactive**: Support for click, hover, and drag events (`onClick`, `onMouseEnter`, `onDragStart`, etc.).
 - **Smart Rendering**: Z-Index sorting, Group clipping, and optimized rendering loop using `requestAnimationFrame`.

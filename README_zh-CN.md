@@ -7,6 +7,7 @@
 ## 特性
 
 - **声明式 API**: 使用 `<Rect>`, `<Circle>`, `<Group>` 等 React 组件来组合场景。
+- **React Reconciler**: 自定义 React 渲染器，将 Fiber 树直接映射为 Canvas 场景图，跳过 DOM Diff 以获得极致性能。
 - **场景图**: 内置分层对象管理（父子关系）。
 - **交互支持**: 支持点击、悬停和拖拽事件（`onClick`, `onMouseEnter`, `onDragStart` 等）。
 - **智能渲染**: 支持 Z-Index 排序、分组裁剪（Clipping），以及使用 `requestAnimationFrame` 优化的渲染循环。
