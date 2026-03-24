@@ -143,3 +143,28 @@ A regular polygon.
 ```
 - `sides`: Number of sides.
 - `radius`: Radius of the polygon.
+
+## `Arc`
+A wedge or arc segment.
+```tsx
+<Arc x={100} y={100} innerRadius={20} outerRadius={50} angle={Math.PI / 2} fill="green" />
+```
+- `innerRadius`: Radius of the inner arc.
+- `outerRadius`: Radius of the outer arc.
+- `angle`: The angle of the arc in radians.
+- `clockwise`: Whether to draw clockwise (default `false`).
+
+## `Image`
+Renders an `HTMLImageElement`.
+```tsx
+const img = new Image();
+img.src = 'path/to/image.png';
+
+return (
+  <Image x={10} y={10} width={100} height={100} image={img} />
+)
+```
+- `image`: The `HTMLImageElement` to render.
+- `width`, `height`: Dimensions for rendering.
+- `cropX`, `cropY`, `cropWidth`, `cropHeight`: Optional cropping parameters.
+
