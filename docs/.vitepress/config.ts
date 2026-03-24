@@ -20,6 +20,7 @@ export default defineConfig({
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/core-concepts' },
+            { text: 'Interactive Events', link: '/guide/events' },
             { text: 'Groups vs Layers', link: '/guide/groups-vs-layers' },
             { text: 'Layers & Performance', link: '/guide/layers' },
             { text: 'Exporting', link: '/guide/exporting' },

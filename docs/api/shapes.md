@@ -13,9 +13,20 @@ All shapes inherit from `Node` and share these common props:
 - `fill`: Fill color or gradient.
 - `stroke`: Stroke color.
 - `lineWidth`: Stroke width.
-- `cursor`: CSS cursor on hover.
+- `cursor`: CSS cursor on hover (e.g., `'pointer'`).
+- `draggable`: Whether the node can be dragged (`true` / `false`).
 - `fillLinearGradient`: Linear gradient object `{ x0, y0, x1, y1, colorStops: [{ offset, color }] }`.
 - `fillRadialGradient`: Radial gradient object `{ x0, y0, r0, x1, y1, r1, colorStops: [{ offset, color }] }`.
+
+### Event Handlers
+
+All shapes support interactive events. For a detailed guide, see [Interactive Events](/guide/events).
+
+- `onClick`, `onDoubleClick`
+- `onMouseDown`, `onMouseUp`, `onMouseMove`
+- `onMouseEnter`, `onMouseLeave`
+- `onWheel`
+- `onDragStart`, `onDragMove`, `onDragEnd` (requires `draggable={true}`)
 
 ### Gradient Example
 ```tsx
