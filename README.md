@@ -27,6 +27,25 @@ A lightweight, high-performance Canvas rendering engine built with TypeScript an
    npm run dev
    ```
 
+## Built-in Shapes
+
+`canvas-react` provides a set of common shapes out of the box. All shapes support standard props like `x`, `y`, `fill`, `stroke`, `lineWidth`, `opacity`, `rotation`, `scaleX`, `scaleY`, and event handlers like `onClick`.
+
+| Shape | Key Props | Description |
+| :--- | :--- | :--- |
+| **`<Rect />`** | `width`, `height`, `cornerRadius` | A rectangle with optional rounded corners. |
+| **`<Circle />`** | `radius` | A simple circle. |
+| **`<Ellipse />`** | `radiusX`, `radiusY` | An ellipse defined by two radii. |
+| **`<Line />`** | `points`, `closed` | A series of connected points. Set `closed` for a polygon. |
+| **`<Path />`** | `data` | Renders SVG path data (e.g., `M 10 10 L 90 90`). |
+| **`<Text />`** | `text`, `fontSize`, `fontFamily`, `align`, `width`, `wordWrap` | Multiline text with alignment and wrapping support. |
+| **`<Image />`** | `image`, `width`, `height` | Renders an `HTMLImageElement`. |
+| **`<Arc />`** | `innerRadius`, `outerRadius`, `angle`, `clockwise` | A wedge or arc segment. |
+| **`<RegularPolygon />`** | `sides`, `radius` | A polygon with equal sides (triangle, hexagon, etc.). |
+| **`<Star />`** | `numPoints`, `innerRadius`, `outerRadius` | A star shape with customizable points and radii. |
+| **`<Group />`** | `clip`, `clipWidth`, `clipHeight` | A container for grouping other shapes. Supports clipping. |
+| **`<Transformer />`** | `nodes` | A special UI component for rotating/scaling other nodes. |
+
 ## Usage
 
 ### Basic Shapes

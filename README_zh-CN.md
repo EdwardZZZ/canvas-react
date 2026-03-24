@@ -27,6 +27,25 @@
    npm run dev
    ```
 
+## 内置组件 (Shapes)
+
+`canvas-react` 提供了一系列内置的图形组件。所有组件都支持通用的属性，如 `x`, `y`, `fill`, `stroke`, `lineWidth`, `opacity`, `rotation`, `scaleX`, `scaleY`, 以及 `onClick` 等事件监听。
+
+| 组件名 | 关键属性 (Key Props) | 描述 |
+| :--- | :--- | :--- |
+| **`<Rect />`** | `width`, `height`, `cornerRadius` | 矩形，支持圆角。 |
+| **`<Circle />`** | `radius` | 圆形。 |
+| **`<Ellipse />`** | `radiusX`, `radiusY` | 椭圆。 |
+| **`<Line />`** | `points`, `closed` | 折线。设置 `closed` 后可作为多边形。 |
+| **`<Path />`** | `data` | 根据 SVG Path 数据渲染（例如：`M 10 10 L 90 90`）。 |
+| **`<Text />`** | `text`, `fontSize`, `align`, `width`, `wordWrap` | 多行文本，支持自动换行和对齐方式。 |
+| **`<Image />`** | `image`, `width`, `height` | 渲染 `HTMLImageElement` 图像。 |
+| **`<Arc />`** | `innerRadius`, `outerRadius`, `angle`, `clockwise` | 扇形、圆环或圆弧。 |
+| **`<RegularPolygon />`** | `sides`, `radius` | 正多边形（如三角形、六边形等）。 |
+| **`<Star />`** | `numPoints`, `innerRadius`, `outerRadius` | 星形，支持自定义角数和内外半径。 |
+| **`<Group />`** | `clip`, `clipWidth`, `clipHeight` | 容器组件，用于对图形进行分组和裁剪。 |
+| **`<Transformer />`** | `nodes` | 用于旋转、缩放其他图形的特殊交互组件。 |
+
 ## 使用方法
 
 ### 基础图形
