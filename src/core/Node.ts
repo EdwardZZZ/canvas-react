@@ -95,6 +95,9 @@ export interface NodeProps extends CanvasEvents {
   shadowOffsetX?: number;
   shadowOffsetY?: number;
 
+  // Hit Test
+  pixelPerfect?: boolean;
+
   [key: string]: any;
 }
 
@@ -585,11 +588,56 @@ export class Node {
     const localPoint = inverseMatrix.transformPoint(globalPoint);
 
     // 2. Check if point is inside shape
-    if (this.isPointInShape(localPoint.x, localPoint.y)) {
+    if (this.props.pixelPerfect) {
+      if (this.isPixelPerfectHit(globalPoint)) {
+        return this;
+      }
+    } else if (this.isPointInShape(localPoint.x, localPoint.y)) {
       return this;
     }
 
     return null;
+  }
+
+  private static pixelHitTestCanvas: HTMLCanvasElement | null = null;
+  private static pixelHitTestCtx: CanvasRenderingContext2D | null = null;
+
+  private isPixelPerfectHit(globalPoint: Point): boolean {
+    if (!Node.pixelHitTestCanvas) {
+        Node.pixelHitTestCanvas = document.createElement('canvas');
+        Node.pixelHitTestCanvas.width = 1;
+        Node.pixelHitTestCanvas.height = 1;
+        Node.pixelHitTestCtx = Node.pixelHitTestCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    const ctx = Node.pixelHitTestCtx;
+    if (!ctx) return false;
+
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.save();
+    
+    // Translate so that globalPoint maps to (0,0) on the 1x1 canvas
+    ctx.translate(-globalPoint.x, -globalPoint.y);
+    
+    const parentGlobalMatrix = this.parent ? this.parent.getGlobalTransform() : new Matrix2D();
+    ctx.transform(parentGlobalMatrix.a, parentGlobalMatrix.b, parentGlobalMatrix.c, parentGlobalMatrix.d, parentGlobalMatrix.e, parentGlobalMatrix.f);
+
+    // Temporarily disable shadow and filter for hit testing to ensure precise picking of the shape itself
+    const originalShadowColor = this.props.shadowColor;
+    const originalFilter = this.props.filter;
+    this.props.shadowColor = undefined;
+    this.props.filter = undefined;
+
+    this.render(ctx);
+
+    this.props.shadowColor = originalShadowColor;
+    this.props.filter = originalFilter;
+
+    ctx.restore();
+
+    const imageData = ctx.getImageData(0, 0, 1, 1);
+    // Check alpha channel
+    return imageData.data[3] > 0;
   }
 
   /**

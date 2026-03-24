@@ -36,6 +36,44 @@ export class Container extends Node {
       this.dirtyRegions.push(rect);
   }
 
+  getMergedDirtyRegions(): Rect[] {
+      const merged = [...this.dirtyRegions];
+      let changed = true;
+      
+      const isIntersecting = (r1: Rect, r2: Rect) => {
+          // Add a small padding to merge nearby regions
+          const padding = 2;
+          return !(r2.x > r1.x + r1.width + padding || 
+                   r2.x + r2.width < r1.x - padding || 
+                   r2.y > r1.y + r1.height + padding ||
+                   r2.y + r2.height < r1.y - padding);
+      };
+
+      const unionRect = (r1: Rect, r2: Rect) => {
+          const x = Math.min(r1.x, r2.x);
+          const y = Math.min(r1.y, r2.y);
+          const right = Math.max(r1.x + r1.width, r2.x + r2.width);
+          const bottom = Math.max(r1.y + r1.height, r2.y + r2.height);
+          return { x, y, width: right - x, height: bottom - y };
+      };
+
+      while (changed) {
+          changed = false;
+          for (let i = 0; i < merged.length; i++) {
+              for (let j = i + 1; j < merged.length; j++) {
+                  if (isIntersecting(merged[i], merged[j])) {
+                      merged[i] = unionRect(merged[i], merged[j]);
+                      merged.splice(j, 1);
+                      changed = true;
+                      break;
+                  }
+              }
+              if (changed) break;
+          }
+      }
+      return merged;
+  }
+
   clearDirtyRegions() {
       this.dirtyRegions = [];
   }

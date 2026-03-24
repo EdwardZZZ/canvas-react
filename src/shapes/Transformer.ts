@@ -10,6 +10,7 @@ export interface TransformerProps extends ContainerProps {
     handleSize?: number;
     keepRatio?: boolean;
     enabledAnchors?: string[]; // 'top-left', 'top-right', etc.
+    boundBoxFunc?: (oldBox: Rect, newBox: Rect) => Rect; // For constraints or snapping
 }
 
 /**
@@ -280,6 +281,20 @@ export class Transformer extends Container {
                  scaleY = scaleY < 0 ? -maxScale : maxScale;
              }
              
+             const newWidth = this.startCombinedBounds.width * scaleX;
+             const newHeight = this.startCombinedBounds.height * scaleY;
+             const newX = center.x - newWidth / 2;
+             const newY = center.y - newHeight / 2;
+
+             if (this.props.boundBoxFunc) {
+                 const newBox = this.props.boundBoxFunc(this.startCombinedBounds, {
+                     x: newX, y: newY, width: newWidth, height: newHeight
+                 });
+                 scaleX = newBox.width / (this.startCombinedBounds.width || 1);
+                 scaleY = newBox.height / (this.startCombinedBounds.height || 1);
+                 // Recalculate center based on newBox? The scaling center might need adjusting, but for now we just restrict scales.
+             }
+
              this.targets.forEach((target, i) => {
                  const start = this.startTargetsProps[i];
                  target.scaleX = start.scaleX * scaleX;

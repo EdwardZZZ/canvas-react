@@ -20,7 +20,7 @@ export class Rect extends Node {
    */
   draw(ctx: CanvasRenderingContext2D) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { width = 100, height = 100, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin, cornerRadius } = this.props;
+    const { width = 100, height = 100, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin, cornerRadius } = this.props;
     
     ctx.beginPath();
     

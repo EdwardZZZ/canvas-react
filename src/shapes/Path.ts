@@ -12,6 +12,17 @@ export interface PathProps extends NodeProps {
  */
 export class Path extends Node {
   declare props: PathProps;
+  
+  private _path2D: Path2D | null = null;
+  private _lastData: string | null = null;
+
+  private getPath2D(): Path2D {
+    if (this.props.data !== this._lastData || !this._path2D) {
+      this._path2D = new Path2D(this.props.data);
+      this._lastData = this.props.data;
+    }
+    return this._path2D;
+  }
 
   getSelfBounds() {
     // A simplified bounding box calculation for paths.
@@ -54,9 +65,9 @@ export class Path extends Node {
    */
   draw(ctx: CanvasRenderingContext2D) {
      
-    const { data, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
+    const { fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     
-    const path = new Path2D(data);
+    const path = this.getPath2D();
     
     if (fill) {
       ctx.fillStyle = fill;
@@ -81,19 +92,7 @@ export class Path extends Node {
    * Uses an offscreen context to leverage the native isPointInPath method.
    */
   isPointInShape(x: number, y: number): boolean {
-    // This is tricky because we need a context to check if point is in path
-    // We can use an offscreen canvas or reuse the path object if cached.
-    // For now, we'll create a temporary canvas context to check.
-    // Optimization: Cache Path2D object
-    
-    const { data } = this.props;
-    const path = new Path2D(data);
-    
-    // We need a context to call isPointInPath
-    // Since we are in Node class, we don't have direct access to a global context easily 
-    // without passing it down or creating a temp one.
-    // Creating a temp canvas for every hit test is expensive.
-    // A better approach in a real engine is to cache a single shared hit-test canvas.
+    const path = this.getPath2D();
     
     if (!Path.hitTestContext) {
         const canvas = document.createElement('canvas');

@@ -149,7 +149,7 @@ const Canvas = React.forwardRef<CanvasRef, CanvasProps>(({ width = 500, height =
       renderLoop.run(time);
 
       if (isDirtyRef.current) {
-          const regions = stage.dirtyRegions;
+          const regions = stage.getMergedDirtyRegions();
           
           // Update animations (if we add time-based updates to nodes)
           stage.update(time);

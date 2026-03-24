@@ -11,7 +11,7 @@ export class Star extends Node {
 
   draw(ctx: CanvasRenderingContext2D) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { numPoints = 5, innerRadius = 20, outerRadius = 50, fill, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
+    const { numPoints = 5, innerRadius = 20, outerRadius = 50, stroke, lineWidth, lineDash, lineDashOffset, lineCap, lineJoin } = this.props;
     if (numPoints < 3) return;
 
     ctx.beginPath();
